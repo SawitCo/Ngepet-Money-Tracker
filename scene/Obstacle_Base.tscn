@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://d0r2ghibywle6"]
+
+[ext_resource type="Script" uid="uid://bt241hkiyjoyt" path="res://scripts/Obstacle_Base.gd" id="1_vwkx7"]
+[ext_resource type="Script" uid="uid://3vaf0vk5yp7m" path="res://scripts/SlowmoArea.gd" id="2_mu047"]
+[ext_resource type="Script" uid="uid://dghdios0khkar" path="res://scripts/typing_prompt.gd" id="3_3kliw"]
+[ext_resource type="AudioStream" uid="uid://cf1kw8b7vq051" path="res://Assets/Music/sfx/bgm_almost_timeup!.ogg" id="4_jcy6n"]
+[ext_resource type="AudioStream" uid="uid://bdhgc53ceab4o" path="res://Assets/Music/sfx/fail.ogg" id="5_dyufj"]
+[ext_resource type="AudioStream" uid="uid://ckv8sgw2ccsdu" path="res://Assets/Music/sfx/achieve_goal.ogg" id="5_mu047"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5vw27"]
+size = Vector3(50.964264, 1.2936401, 1.638794)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4c57u"]
+size = Vector3(12.478607, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kek77"]
+albedo_color = Color(0, 0.5661477, 0.5286518, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kek77"]
+size = Vector3(3.534083, 2.9326172, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_272bh"]
+size = Vector3(3.2925415, 1, 1)
+
+[node name="Obstacle_Base" type="Node3D" unique_id=1114171317 groups=["player"]]
+script = ExtResource("1_vwkx7")
+
+[node name="ObstacleHitbox" type="Area3D" parent="." unique_id=1393558703]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7825794, 0.41977072, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ObstacleHitbox" unique_id=464020481]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1812305, -3.1844115, 0)
+shape = SubResource("BoxShape3D_5vw27")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1288428675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5603466, 0.428239, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1117011116]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4017334, -3.3280478, 0)
+shape = SubResource("BoxShape3D_4c57u")
+debug_color = Color(0, 0, 0, 0.41960785)
+
+[node name="CSGBox3D" type="CSGBox3D" parent="StaticBody3D" unique_id=1443130602]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4095707, -3.3667111, 0)
+size = Vector3(4.2314453, 1, 1)
+material = SubResource("StandardMaterial3D_kek77")
+
+[node name="SlowmoArea" type="Area3D" parent="." unique_id=676845770 node_paths=PackedStringArray("typing_prompt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47901487, 0)
+script = ExtResource("2_mu047")
+typing_prompt = NodePath("../TypingPrompt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SlowmoArea" unique_id=692299938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.23067093, 0.83740234, 0)
+shape = SubResource("BoxShape3D_kek77")
+debug_color = Color(0.9845416, 0, 0.34705535, 0.41960785)
+
+[node name="TypingPrompt" type="Label3D" parent="." unique_id=94770377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21927452, 2.8508391, 0.15519238)
+modulate = Color(0, 0, 0, 1)
+text = "Ketik:
+Samting"
+font_size = 110
+script = ExtResource("3_3kliw")
+
+[node name="Area3D" type="Area3D" parent="TypingPrompt" unique_id=1789275130]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TypingPrompt/Area3D" unique_id=569269197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.037046432, -0.5553405, 0)
+shape = SubResource("BoxShape3D_272bh")
+debug_color = Color(0.9144183, 8.8560584e-05, 0.71814275, 0.41960785)
+
+[node name="CSGBox3D" type="CSGBox3D" parent="TypingPrompt/Area3D/CollisionShape3D" unique_id=628750312]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0025787354, -0.98225737, 0)
+size = Vector3(3.2754822, 0.16894531, 1)
+
+[node name="AchieveSFX" type="AudioStreamPlayer" parent="TypingPrompt" unique_id=852373413]
+stream = ExtResource("5_mu047")
+volume_db = -65.683
+
+[node name="TypingTimer" type="Timer" parent="TypingPrompt" unique_id=1883947583]
+wait_time = 5.0
+one_shot = true
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="TypingPrompt" unique_id=714568950]
+stream = ExtResource("4_jcy6n")
+volume_db = -10.832
+
+[node name="FailSFX" type="AudioStreamPlayer" parent="." unique_id=608885413]
+stream = ExtResource("5_dyufj")
+volume_db = -10.0

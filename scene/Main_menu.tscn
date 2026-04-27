@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://bhmvrnc64clvi"]
+
+[ext_resource type="Script" uid="uid://cnmkic6iyicr7" path="res://scripts/main_menu.gd" id="1_j1gnl"]
+[ext_resource type="Texture2D" uid="uid://drpahn7imv30x" path="res://scene/backgroundgame.jpg" id="2_828d1"]
+[ext_resource type="AudioStream" uid="uid://ckv8sgw2ccsdu" path="res://Assets/Music/sfx/achieve_goal.ogg" id="2_j1gnl"]
+[ext_resource type="AudioStream" uid="uid://cf1kw8b7vq051" path="res://Assets/Music/sfx/bgm_almost_timeup!.ogg" id="3_828d1"]
+
+[node name="Main menu" type="Control" unique_id=2031784277]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_j1gnl")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=262724496]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_828d1")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=770213007]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(2.253293, 2.253293, 2.253293, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1208005231]
+layout_mode = 0
+offset_left = 460.0
+offset_top = 57.0
+offset_right = 584.0
+offset_bottom = 160.0
+scale = Vector2(2, 1.8799998)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=1844219601]
+layout_mode = 2
+
+[node name="Judul" type="Label" parent="CenterContainer/VBoxContainer" unique_id=963642894]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 0.80784315)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+text = "VRECTOR
+TYPE TO START !"
+horizontal_alignment = 1
+
+[node name="Perintah" type="Label" parent="CenterContainer/VBoxContainer" unique_id=1938290994]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+text = "S T A R T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Column" type="Label" parent="CenterContainer/VBoxContainer" unique_id=1174981190]
+layout_mode = 2
+text = "\"\""
+horizontal_alignment = 1
+
+[node name="AchieveSFX" type="AudioStreamPlayer" parent="." unique_id=1343505868]
+stream = ExtResource("2_j1gnl")
+volume_db = -0.693
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=1596620317]
+stream = ExtResource("3_828d1")
+volume_db = -10.832

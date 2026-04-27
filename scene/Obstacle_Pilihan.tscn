@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://f4xpiidpfpcf"]
+
+[ext_resource type="PackedScene" uid="uid://d0r2ghibywle6" path="res://scene/Obstacle_Base.tscn" id="1_5r5ld"]
+[ext_resource type="Script" uid="uid://dfsfxp8jwr00x" path="res://scripts/)bstacle_Pilihan.gd" id="2_tvi0w"]
+
+[node name="Obstacle_Pilihan" unique_id=1114171317 instance=ExtResource("1_5r5ld")]
+script = ExtResource("2_tvi0w")
+speed_multiplier = 5.5
+boost_duration = 3.0
+
+[node name="Label3D" type="Label3D" parent="." index="5" unique_id=1897749658]

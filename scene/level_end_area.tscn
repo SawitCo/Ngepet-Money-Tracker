@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c2nt5poooq5v0"]
+
+[ext_resource type="Script" uid="uid://bwdjrogetrqul" path="res://LevelEndArea.gd" id="1_nvio8"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_w48qg"]
+size = Vector3(1.2939453, 3.9180908, 1.5878906)
+
+[node name="LevelEndArea" type="Area3D" unique_id=1042391814]
+script = ExtResource("1_nvio8")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1421617265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14697266, 1.4590454, 0.2939453)
+shape = SubResource("BoxShape3D_w48qg")
+debug_color = Color(1, 0.14901961, 0, 0.41960785)

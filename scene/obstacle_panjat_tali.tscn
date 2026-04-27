@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://osb6vn1qt7qi"]
+
+[ext_resource type="PackedScene" uid="uid://d0r2ghibywle6" path="res://scene/Obstacle_Base.tscn" id="1_gtcnx"]
+[ext_resource type="Script" path="res://scripts/obstacle_panjat_tali.gd" id="2_mhjkq"]
+
+[node name="Obstacle_Panjat_tali" unique_id=1114171317 instance=ExtResource("1_gtcnx")]
+script = ExtResource("2_mhjkq")
+climb_height = 10.0
+climb_duration = 2.5

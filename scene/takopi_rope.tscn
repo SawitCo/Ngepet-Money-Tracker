@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://c7pf8gyt8ef72"]
+
+[ext_resource type="PackedScene" uid="uid://d10lguxe6kpo4" path="res://Assets/Models/TakopiRope.glb" id="1_8207y"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8207y"]
+size = Vector3(1.0307007, 9.897827, 0.052978516)
+
+[node name="TakopiRope" type="StaticBody3D" unique_id=485700245]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=820757270]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.014312744, 1.6588745, -0.005493164)
+shape = SubResource("BoxShape3D_8207y")
+
+[node name="TakopiRope" parent="." unique_id=155091690 instance=ExtResource("1_8207y")]
+
+[node name="Cube" parent="TakopiRope" index="0" unique_id=23086627]
+transform = Transform3D(0.08791114, 0, 0, 0, 4.953688, 0, 0, 0, -0.026748689, 0, 1.6237742, 0)
+
+[node name="Cylinder" parent="TakopiRope" index="1" unique_id=397646210]
+transform = Transform3D(0.21416721, 0, 0, 0, 0, -0.21416721, 0, 0.05460944, 0, 0, 6.432047, 0)
+
+[node name="Circle" parent="TakopiRope" index="2" unique_id=479874043]
+transform = Transform3D(0.15713441, 0, 0, 0, 0, -0.15713441, 0, 0.15713441, 0, 0, 6.4295516, 0.01305141)
+
+[editable path="TakopiRope"]
