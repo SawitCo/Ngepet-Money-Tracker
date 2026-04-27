@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://bh8fyuc5iohmx"]
+
+[ext_resource type="PackedScene" uid="uid://d0r2ghibywle6" path="res://scene/Obstacle_Base.tscn" id="1_lbjxo"]
+[ext_resource type="Script" uid="uid://c222wv16rqmvo" path="res://scripts/obstacle_kasih_jalan.gd" id="2_e2qcy"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5vw27"]
+size = Vector3(12.559809, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4c57u"]
+size = Vector3(12.478607, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kek77"]
+albedo_color = Color(0, 0.5661477, 0.5286518, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kek77"]
+size = Vector3(4.662269, 2.6748047, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_272bh"]
+size = Vector3(3.2925415, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e2qcy"]
+size = Vector3(10.935059, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e2qcy"]
+albedo_color = Color(0.9163348, 0.40986076, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_04nte"]
+material = SubResource("StandardMaterial3D_e2qcy")
+size = Vector3(11, 1, 1)
+
+[node name="Obstacle_Kasih_Jalan" unique_id=1114171317 instance=ExtResource("1_lbjxo")]
+script = ExtResource("2_e2qcy")
+platform_speed = 13.0
+
+[node name="CollisionShape3D" parent="ObstacleHitbox" parent_id_path=PackedInt32Array(1393558703) index="0" unique_id=464020481]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1812305, -3.038546, 0)
+shape = SubResource("BoxShape3D_5vw27")
+
+[node name="CollisionShape3D" parent="StaticBody3D" parent_id_path=PackedInt32Array(1288428675) index="0" unique_id=1117011116]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4017334, -3.3889937, 0)
+shape = SubResource("BoxShape3D_4c57u")
+
+[node name="CSGBox3D" parent="StaticBody3D" parent_id_path=PackedInt32Array(1288428675) index="1" unique_id=1443130602]
+material = SubResource("StandardMaterial3D_kek77")
+
+[node name="CollisionShape3D" parent="SlowmoArea" parent_id_path=PackedInt32Array(676845770) index="0" unique_id=692299938]
+shape = SubResource("BoxShape3D_kek77")
+
+[node name="CollisionShape3D" parent="TypingPrompt/Area3D" parent_id_path=PackedInt32Array(1789275130) index="0" unique_id=569269197]
+shape = SubResource("BoxShape3D_272bh")
+
+[node name="PlatformTarget" type="Marker3D" parent="." index="5" unique_id=1684577342]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.9008384, 0.026933432, 0)
+
+[node name="Platform" type="CharacterBody3D" parent="." index="6" unique_id=180571384]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.366811, -4.9213, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Platform" index="0" unique_id=828468498]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0041503906, 0, 0)
+shape = SubResource("BoxShape3D_e2qcy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Platform" index="1" unique_id=1552389654]
+mesh = SubResource("BoxMesh_04nte")

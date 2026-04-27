@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://bh7w8v577cly0"]
+
+[node name="CameraRig" type="Node3D" unique_id=1786440836]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=402075013]

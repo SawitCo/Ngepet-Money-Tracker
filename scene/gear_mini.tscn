@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://sl32apid3m8k"]
+
+[ext_resource type="PackedScene" uid="uid://dlbchtu6o11mv" path="res://Assets/Models/Gear.glb" id="1_ddqku"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ddqku"]
+size = Vector3(0.24679565, 1, 4.849121)
+
+[node name="GearMini" type="StaticBody3D" unique_id=2120590469]
+
+[node name="Gear" parent="." unique_id=773168002 instance=ExtResource("1_ddqku")]
+transform = Transform3D(0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0)
+
+[node name="Gear2" parent="." unique_id=313630945 instance=ExtResource("1_ddqku")]
+transform = Transform3D(0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0, 0.46689272, 0, 0, -0.94561064)
+
+[node name="Gear3" parent="." unique_id=1797736575 instance=ExtResource("1_ddqku")]
+transform = Transform3D(0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0, 0.46689272, 0, 0, -1.8940293)
+
+[node name="Gear4" parent="." unique_id=348688195 instance=ExtResource("1_ddqku")]
+transform = Transform3D(0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0, 0.46689272, 0, 0, -2.838321)
+
+[node name="Gear5" parent="." unique_id=1968308288 instance=ExtResource("1_ddqku")]
+transform = Transform3D(0.46689272, 0, 0, 0, 0.46689272, 0, 0, 0, 0.46689272, 0, 0, -3.7900221)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=654461804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.023635864, 0.487684, -1.9245605)
+shape = SubResource("BoxShape3D_ddqku")
+
+[editable path="Gear"]
+[editable path="Gear2"]
+[editable path="Gear3"]
+[editable path="Gear4"]
+[editable path="Gear5"]

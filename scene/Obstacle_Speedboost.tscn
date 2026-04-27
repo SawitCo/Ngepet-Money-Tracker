@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://ct0f1ow5n3xm2"]
+
+[ext_resource type="PackedScene" uid="uid://d0r2ghibywle6" path="res://scene/Obstacle_Base.tscn" id="1_1f7gi"]
+[ext_resource type="Script" uid="uid://dk8tl8kl5erg4" path="res://scripts/Obstacle_Speedboost.gd" id="2_qgw65"]
+
+[node name="Obstacle_Speedboost" unique_id=1114171317 instance=ExtResource("1_1f7gi")]
+script = ExtResource("2_qgw65")
+speed_multiplier = 5.5
+boost_duration = 3.0

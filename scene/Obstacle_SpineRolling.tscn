@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://uwjstab2x00k"]
+
+[ext_resource type="Script" path="res://scripts/Obstacle_SpineRolling.gd" id="1_778m7"]
+[ext_resource type="PackedScene" uid="uid://dlbchtu6o11mv" path="res://Assets/Models/Gear.glb" id="2_kut1s"]
+[ext_resource type="AudioStream" uid="uid://bdhgc53ceab4o" path="res://Assets/Music/sfx/fail.ogg" id="3_kut1s"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_4f3pg"]
+radius = 1.0227844
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_kut1s"]
+radius = 1.0698318
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kut1s"]
+size = Vector3(1, 2.8475342, 1.46875)
+
+[node name="Obstacle_SpineRolling" type="Node3D" unique_id=649545288]
+script = ExtResource("1_778m7")
+
+[node name="Spine" type="RigidBody3D" parent="." unique_id=1049689502]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Spine" unique_id=800683842]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0275092, 0)
+shape = SubResource("SphereShape3D_4f3pg")
+debug_color = Color(0.93496346, 0.2565088, 0, 0.41960785)
+
+[node name="KillArea" type="Area3D" parent="Spine" unique_id=1384377614]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6010879, 0)
+collision_layer = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Spine/KillArea" unique_id=339137129]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.40818024, 0)
+shape = SubResource("SphereShape3D_kut1s")
+debug_color = Color(0, 0, 0, 0.41960785)
+
+[node name="Gear" parent="Spine" unique_id=773168002 instance=ExtResource("2_kut1s")]
+transform = Transform3D(-0.0021642148, 0, -0.9999977, 0, 1, 0, 0.9999977, 0, -0.0021642148, 0.04506936, -0.03789711, -0.045485854)
+
+[node name="FailSFX" type="AudioStreamPlayer" parent="." unique_id=339710690]
+stream = ExtResource("3_kut1s")
+volume_db = -10.0
+
+[node name="StartArea" type="Area3D" parent="." unique_id=502481537]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StartArea" unique_id=913707147]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9237671, 4.2241907)
+shape = SubResource("BoxShape3D_kut1s")
+debug_color = Color(0.9977123, 0, 0.17001125, 0.41960785)
+
+[editable path="Spine/Gear"]
