@@ -106,27 +106,52 @@ private enum class NgepetTab(val label: String, val icon: ImageVector) {
 
 private enum class InputSheetMode { Manual, Voice }
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.ngepet.presentation.MainViewModel
+import com.example.ngepet.presentation.ui.model.CategoryUi
+import java.util.Date
+
 @Composable
-fun NgepetApp() {
-    var hasCompletedOnboarding by remember { mutableStateOf(false) }
-    var userName by remember { mutableStateOf("Budi") }
+fun NgepetApp(viewModel: MainViewModel = viewModel()) {
+    val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
+    val userName by viewModel.userName.collectAsState()
+    
+    val transactions by viewModel.transactions.collectAsState()
+    val categoriesEntity by viewModel.categories.collectAsState()
+    
+    val categories = categoriesEntity.map {
+        CategoryUi(id = it.id.toString(), name = it.name, iconName = it.iconName)
+    }
 
     if (!hasCompletedOnboarding) {
         OnboardingScreen(
-            initialName = userName,
+            initialName = userName ?: "",
             onComplete = { name ->
-                userName = name.ifBlank { "Teman" }
-                hasCompletedOnboarding = true
+                viewModel.saveUserName(name.ifBlank { "Teman" })
             }
         )
         return
     }
 
-    MainAppContent(userName = userName)
+    MainAppContent(
+        userName = userName ?: "Teman",
+        transactions = transactions,
+        categories = categories,
+        onAddTransaction = { amount, categoryId, note, isExpense ->
+            viewModel.addTransaction(amount, categoryId, note, Date().time, isExpense)
+        }
+    )
 }
 
 @Composable
-private fun MainAppContent(userName: String) {
+private fun MainAppContent(
+    userName: String,
+    transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>,
+    categories: List<CategoryUi>,
+    onAddTransaction: (Long, Long, String, Boolean) -> Unit
+) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
 
@@ -148,8 +173,8 @@ private fun MainAppContent(userName: String) {
                 color = SurfaceWarm
             ) {
                 when (selectedTab) {
-                    NgepetTab.Home -> HomeScreen(userName = userName)
-                    NgepetTab.History -> HistoryScreen()
+                    NgepetTab.Home -> HomeScreen(userName = userName, transactions = transactions.take(5))
+                    NgepetTab.History -> HistoryScreen(transactions = transactions)
                     NgepetTab.Report -> ReportScreen()
                     NgepetTab.Budget -> BudgetScreen()
                 }
@@ -165,8 +190,13 @@ private fun MainAppContent(userName: String) {
             )
             AddTransactionSheet(
                 mode = mode,
+                categories = categories,
                 onModeChange = { sheetMode = it },
                 onClose = { sheetMode = null },
+                onSave = { amount, categoryId, note, isExpense ->
+                    onAddTransaction(amount, categoryId, note, isExpense)
+                    sheetMode = null
+                },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -289,7 +319,7 @@ private fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(userName: String) {
+private fun HomeScreen(userName: String, transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>) {
     var showDailyTip by remember { mutableStateOf(true) }
 
     ScreenColumn {
@@ -315,7 +345,7 @@ private fun HomeScreen(userName: String) {
         }
         SectionHeader("Transaksi terbaru", "Lihat semua")
         Spacer(Modifier.height(4.dp))
-        recentTransactions.forEach { TransactionRow(it) }
+        transactions.forEach { TransactionRow(it) }
     }
 }
 
@@ -381,12 +411,12 @@ private fun DailyTipCard(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun HistoryScreen() {
+private fun HistoryScreen(transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>) {
     var selectedSource by remember { mutableStateOf("Semua") }
     var selectedCategory by remember { mutableStateOf("Semua kategori") }
-    val filteredTransactions = historyTransactions.filter { transaction ->
-        val matchesSource = selectedSource == "Semua" || transaction.source == selectedSource
-        val matchesCategory = selectedCategory == "Semua kategori" || transaction.category == selectedCategory
+    val filteredTransactions = transactions.filter { transaction ->
+        val matchesSource = selectedSource == "Semua" || transaction.note.contains(selectedSource, ignoreCase = true)
+        val matchesCategory = selectedCategory == "Semua kategori" || transaction.categoryName == selectedCategory
         matchesSource && matchesCategory
     }
 
@@ -486,8 +516,10 @@ private fun BudgetScreen() {
 @Composable
 private fun AddTransactionSheet(
     mode: InputSheetMode,
+    categories: List<CategoryUi>,
     onModeChange: (InputSheetMode) -> Unit,
     onClose: () -> Unit,
+    onSave: (Long, Long, String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -521,14 +553,20 @@ private fun AddTransactionSheet(
             InputModeChip("Suara", Icons.Filled.Mic, mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
         }
         Spacer(Modifier.height(12.dp))
-        if (mode == InputSheetMode.Manual) ManualInputContent() else VoiceInputContent()
+        if (mode == InputSheetMode.Manual) {
+            ManualInputContent(categories, onSave)
+        } else {
+            VoiceInputContent()
+        }
     }
 }
 
 @Composable
-private fun ManualInputContent() {
+private fun ManualInputContent(categories: List<CategoryUi>, onSave: (Long, Long, String, Boolean) -> Unit) {
+    var amount by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("Pengeluaran") }
-    var selectedCategory by remember { mutableStateOf("Makanan") }
+    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.id ?: "") }
 
     Row(
         modifier = Modifier
@@ -571,49 +609,52 @@ private fun ManualInputContent() {
         }
     }
     Spacer(Modifier.height(12.dp))
-    Text(
-        "Rp",
-        color = Muted,
-        fontSize = 14.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Text(
-        "25.000",
-        color = Ink,
-        fontSize = 34.sp,
-        fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(Modifier.height(10.dp))
     Text("Kategori", color = Muted, fontSize = 11.sp)
     Spacer(Modifier.height(7.dp))
     CategoryGrid(
+        categories = categories,
         selectedCategory = selectedCategory,
         onCategorySelected = { selectedCategory = it }
     )
     Spacer(Modifier.height(10.dp))
-    FormField("Catatan", "Warung makan siang")
-    FormField("Tanggal", "Hari ini, 10 Mei 2026")
+    OutlinedTextField(
+        value = note,
+        onValueChange = { note = it },
+        label = { Text("Catatan", fontSize = 12.sp) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+    Spacer(Modifier.height(10.dp))
+    OutlinedTextField(
+        value = amount,
+        onValueChange = { amount = it },
+        label = { Text("Nominal", fontSize = 12.sp) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
     Button(
-        onClick = {},
+        onClick = { 
+            val amountValue = amount.toLongOrNull() ?: 0L
+            val catId = selectedCategory.toLongOrNull() ?: 0L
+            onSave(amountValue, catId, note, selectedType == "Pengeluaran") 
+        },
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Green600),
-        shape = RoundedCornerShape(13.dp)
+        shape = RoundedCornerShape(13.dp),
+        enabled = amount.isNotBlank() && selectedCategory.isNotBlank()
     ) { Text("Simpan transaksi") }
 }
 
 @Composable
-private fun CategoryGrid(selectedCategory: String, onCategorySelected: (String) -> Unit) {
+private fun CategoryGrid(categories: List<CategoryUi>, selectedCategory: String, onCategorySelected: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        transactionCategories.chunked(2).forEach { rowItems ->
+        categories.chunked(2).forEach { rowItems ->
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
                 rowItems.forEach { category ->
                     CategoryCard(
                         category = category,
-                        selected = category.label == selectedCategory,
-                        onClick = { onCategorySelected(category.label) },
+                        selected = category.id == selectedCategory,
+                        onClick = { onCategorySelected(category.id) },
                         modifier = Modifier.weight(1f)
                     )
                 }
