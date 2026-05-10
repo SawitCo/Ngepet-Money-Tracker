@@ -1,5 +1,15 @@
 package com.example.ngepet.presentation.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -111,6 +121,8 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
     
     val transactions by viewModel.transactions.collectAsState()
     val categoriesEntity by viewModel.categories.collectAsState()
+    val initialBalance by viewModel.initialBalance.collectAsState()
+    val currentBalance by viewModel.currentBalance.collectAsState()
     
     val categories = categoriesEntity.map {
         CategoryUi(id = it.id.toString(), name = it.name, iconName = it.iconName)
@@ -119,8 +131,10 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
     if (!hasCompletedOnboarding) {
         OnboardingScreen(
             initialName = userName ?: "",
-            onComplete = { name ->
+            initialBalance = initialBalance,
+            onComplete = { name, balance ->
                 viewModel.saveUserName(name.ifBlank { "Teman" })
+                viewModel.saveInitialBalance(balance)
             }
         )
         return
@@ -130,6 +144,7 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
         userName = userName ?: "Teman",
         transactions = transactions,
         categories = categories,
+        currentBalance = currentBalance,
         onAddTransaction = { amount, categoryId, note, isExpense ->
             viewModel.addTransaction(amount, categoryId, note, Date().time, isExpense)
         }
@@ -141,6 +156,7 @@ private fun MainAppContent(
     userName: String,
     transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>,
     categories: List<CategoryUi>,
+    currentBalance: Long,
     onAddTransaction: (Long, Long, String, Boolean) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
@@ -163,43 +179,57 @@ private fun MainAppContent(
                     .padding(innerPadding),
                 color = SurfaceWarm
             ) {
-                when (selectedTab) {
-                    NgepetTab.Home -> HomeScreen(userName = userName, transactions = transactions.take(5))
-                    NgepetTab.History -> HistoryScreen(transactions = transactions)
-                    NgepetTab.Report -> ReportScreen()
-                    NgepetTab.Budget -> BudgetScreen()
+                Crossfade(targetState = selectedTab, animationSpec = tween(300)) { tab ->
+                    when (tab) {
+                        NgepetTab.Home -> HomeScreen(
+                            userName = userName,
+                            transactions = transactions.take(5),
+                            currentBalance = currentBalance
+                        )
+                        NgepetTab.History -> HistoryScreen(transactions = transactions)
+                        NgepetTab.Report -> ReportScreen()
+                        NgepetTab.Budget -> BudgetScreen()
+                    }
                 }
             }
         }
 
-        sheetMode?.let { mode ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.42f))
-                    .clickable { sheetMode = null }
-            )
-            AddTransactionSheet(
-                mode = mode,
-                categories = categories,
-                onModeChange = { sheetMode = it },
-                onClose = { sheetMode = null },
-                onSave = { amount, categoryId, note, isExpense ->
-                    onAddTransaction(amount, categoryId, note, isExpense)
-                    sheetMode = null
-                },
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
+        AnimatedVisibility(
+            visible = sheetMode != null,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it }
+        ) {
+            sheetMode?.let { mode ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.42f))
+                        .clickable { sheetMode = null }
+                )
+                AddTransactionSheet(
+                    mode = mode,
+                    categories = categories,
+                    onModeChange = { sheetMode = it },
+                    onClose = { sheetMode = null },
+                    onSave = { amount, categoryId, note, isExpense ->
+                        onAddTransaction(amount, categoryId, note, isExpense)
+                        sheetMode = null
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun OnboardingScreen(initialName: String, onComplete: (String) -> Unit) {
+private fun OnboardingScreen(initialName: String, initialBalance: Long, onComplete: (String, Long) -> Unit) {
     var currentPage by remember { mutableStateOf(0) }
     var name by remember { mutableStateOf(initialName) }
+    var balanceInput by remember { mutableStateOf(if (initialBalance > 0) initialBalance.toString() else "") }
     val page = onboardingPages[currentPage]
     val isLastPage = currentPage == onboardingPages.lastIndex
+    val hasNamePage = true
 
     Column(
         modifier = Modifier
@@ -219,53 +249,71 @@ private fun OnboardingScreen(initialName: String, onComplete: (String) -> Unit) 
                 Text("Ngepet", color = Green800, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
                 Text("Ngedukasi Dompet", color = Muted, fontSize = 12.sp)
             }
-            TextButton(onClick = { onComplete(name) }) {
+            TextButton(onClick = { onComplete(name, balanceInput.toLongOrNull() ?: 0L) }) {
                 Text("Lewati", color = Green600)
             }
         }
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(150.dp)
-                    .clip(RoundedCornerShape(36.dp))
-                    .background(page.bg),
-                contentAlignment = Alignment.Center
+        AnimatedContent(targetState = currentPage, transitionSpec = {
+            fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+        }) { pageIndex ->
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                SymbolBox(page.icon, page.color, Color.White.copy(alpha = 0.72f), 86.dp)
-            }
-            Spacer(Modifier.height(28.dp))
-            Text(
-                page.title,
-                color = Ink,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                lineHeight = 32.sp
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                page.description,
-                color = Muted,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 20.sp,
-                modifier = Modifier.padding(horizontal = 10.dp)
-            )
-            if (currentPage == 0) {
-                Spacer(Modifier.height(24.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Nama panggilan") },
-                    placeholder = { Text("Contoh: Budi") },
-                    shape = RoundedCornerShape(14.dp)
+                val p = onboardingPages[pageIndex]
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clip(RoundedCornerShape(36.dp))
+                        .background(p.bg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SymbolBox(p.icon, p.color, Color.White.copy(alpha = 0.72f), 86.dp)
+                }
+                Spacer(Modifier.height(28.dp))
+                Text(
+                    p.title,
+                    color = Ink,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 32.sp
                 )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    p.description,
+                    color = Muted,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(horizontal = 10.dp)
+                )
+                if (pageIndex == 0) {
+                    Spacer(Modifier.height(24.dp))
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Nama panggilan") },
+                        placeholder = { Text("Contoh: Budi") },
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
+                if (pageIndex == 3) {
+                    Spacer(Modifier.height(24.dp))
+                    OutlinedTextField(
+                        value = balanceInput,
+                        onValueChange = { balanceInput = it.filter { c -> c.isDigit() } },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Saldo awal") },
+                        placeholder = { Text("Contoh: 500000") },
+                        leadingIcon = { Text("Rp", color = Muted) },
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
             }
         }
 
@@ -275,10 +323,14 @@ private fun OnboardingScreen(initialName: String, onComplete: (String) -> Unit) 
                 horizontalArrangement = Arrangement.Center
             ) {
                 onboardingPages.forEachIndexed { index, _ ->
+                    val dotWidth by animateDpAsState(
+                        targetValue = if (index == currentPage) 22.dp else 7.dp,
+                        animationSpec = tween(300)
+                    )
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 3.dp)
-                            .size(width = if (index == currentPage) 22.dp else 7.dp, height = 7.dp)
+                            .size(width = dotWidth, height = 7.dp)
                             .clip(RoundedCornerShape(4.dp))
                             .background(if (index == currentPage) Green600 else Green100)
                     )
@@ -286,7 +338,11 @@ private fun OnboardingScreen(initialName: String, onComplete: (String) -> Unit) 
             }
             Button(
                 onClick = {
-                    if (isLastPage) onComplete(name) else currentPage += 1
+                    if (isLastPage) {
+                        onComplete(name, balanceInput.toLongOrNull() ?: 0L)
+                    } else {
+                        currentPage += 1
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Green600),
@@ -310,7 +366,7 @@ private fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(userName: String, transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>) {
+private fun HomeScreen(userName: String, transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>, currentBalance: Long) {
     var showDailyTip by remember { mutableStateOf(true) }
 
     ScreenColumn {
@@ -326,7 +382,7 @@ private fun HomeScreen(userName: String, transactions: List<com.example.ngepet.p
             SymbolBox(Icons.Filled.Notifications, Green600, Green50, 36.dp)
         }
         Spacer(Modifier.height(14.dp))
-        BalanceCard()
+        BalanceCard(currentBalance = currentBalance)
         if (showDailyTip) {
             Spacer(Modifier.height(12.dp))
             DailyTipCard(onDismiss = { showDailyTip = false })
@@ -341,7 +397,7 @@ private fun HomeScreen(userName: String, transactions: List<com.example.ngepet.p
 }
 
 @Composable
-private fun BalanceCard() {
+private fun BalanceCard(currentBalance: Long) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -350,7 +406,7 @@ private fun BalanceCard() {
             .padding(16.dp)
     ) {
         Text("TOTAL SALDO", color = Color.White.copy(alpha = 0.72f), fontSize = 10.sp)
-        Text("Rp 2.340.000", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
+        Text("Rp ${formatAmount(currentBalance)}", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BalanceMiniCard("Masuk bulan ini", "Rp 3.500.000", Modifier.weight(1f))
@@ -1127,6 +1183,10 @@ private fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp) {
             modifier = Modifier.size(size * 0.52f)
         )
     }
+}
+
+private fun formatAmount(amount: Long): String {
+    return String.format("%,d", amount).replace(",", ".")
 }
 
 @Preview(showBackground = true)

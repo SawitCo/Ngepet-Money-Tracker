@@ -9,13 +9,13 @@ import com.example.ngepet.data.local.entity.CategoryEntity
 import com.example.ngepet.data.local.entity.TransactionEntity
 import com.example.ngepet.presentation.ui.model.CategoryUi
 import com.example.ngepet.presentation.ui.model.TransactionUi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-import kotlinx.coroutines.flow.first
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val database = NgepetDatabase.getDatabase(application)
@@ -24,10 +24,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val userPreferencesRepository = UserPreferencesRepository(application)
 
     val userName: StateFlow<String?> = userPreferencesRepository.userNameFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val hasCompletedOnboarding: StateFlow<Boolean> = userPreferencesRepository.hasCompletedOnboardingFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val initialBalance: StateFlow<Long> = userPreferencesRepository.initialBalanceFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
+
+    val currentBalance: StateFlow<Long> = combine(
+        transactionDao.getAllTransactions(),
+        userPreferencesRepository.initialBalanceFlow
+    ) { txs, balance ->
+        val netAmount = txs.sumOf { tx ->
+            if (tx.isExpense) -tx.amount else tx.amount
+        }
+        balance + netAmount
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     val categories: StateFlow<List<CategoryEntity>> = categoryDao.getAllCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -51,8 +64,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        viewModelScope.launch {
-            // Populate initial categories if empty
+        viewModelScope.launch(Dispatchers.IO) {
             val currentCategories = categoryDao.getAllCategories().first()
             if (currentCategories.isEmpty()) {
                 val initialCategories = listOf(
@@ -61,7 +73,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     CategoryEntity(name = "Gaji", iconName = "Payments", isExpense = false),
                     CategoryEntity(name = "Belanja", iconName = "ShoppingCart", isExpense = true),
                     CategoryEntity(name = "Hiburan", iconName = "Movie", isExpense = true),
-                    CategoryEntity(name = "Tagihan", iconName = "Receipt", isExpense = true)
+                    CategoryEntity(name = "Tagihan", iconName = "Receipt", isExpense = true),
+                    CategoryEntity(name = "Kesehatan", iconName = "LocalHospital", isExpense = true),
+                    CategoryEntity(name = "Lainnya", iconName = "MoreHoriz", isExpense = true)
                 )
                 initialCategories.forEach { categoryDao.insertCategory(it) }
             }
@@ -71,6 +85,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveUserName(name: String) {
         viewModelScope.launch {
             userPreferencesRepository.saveUserName(name)
+        }
+    }
+
+    fun saveInitialBalance(balance: Long) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveInitialBalance(balance)
         }
     }
 
