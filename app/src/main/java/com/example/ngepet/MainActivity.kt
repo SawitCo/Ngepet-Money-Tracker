@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import com.example.ngepet.presentation.MainViewModel
 import com.example.ngepet.presentation.ui.NgepetApp
-import com.example.ngepet.ui.theme.NgepetTheme
+import com.example.ngepet.presentation.ui.theme.NgepetTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()

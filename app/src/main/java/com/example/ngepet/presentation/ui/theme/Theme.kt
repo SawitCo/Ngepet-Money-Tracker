@@ -1,4 +1,4 @@
-package com.example.ngepet.ui.theme
+package com.example.ngepet.presentation.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme

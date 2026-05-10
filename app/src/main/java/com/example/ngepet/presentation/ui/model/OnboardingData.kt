@@ -4,12 +4,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.Savings
-import com.example.ngepet.ui.theme.Blue50
-import com.example.ngepet.ui.theme.Blue600
-import com.example.ngepet.ui.theme.Green50
-import com.example.ngepet.ui.theme.Green600
-import com.example.ngepet.ui.theme.Orange50
-import com.example.ngepet.ui.theme.Orange600
+import com.example.ngepet.presentation.ui.theme.Blue50
+import com.example.ngepet.presentation.ui.theme.Blue600
+import com.example.ngepet.presentation.ui.theme.Green50
+import com.example.ngepet.presentation.ui.theme.Green600
+import com.example.ngepet.presentation.ui.theme.Orange50
+import com.example.ngepet.presentation.ui.theme.Orange600
 
 val onboardingPages = listOf(
     OnboardingPageUi(
