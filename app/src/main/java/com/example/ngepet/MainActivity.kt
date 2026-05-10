@@ -30,12 +30,32 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.TrackChanges
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +69,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -85,11 +106,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class NgepetTab(val label: String, val icon: String) {
-    Home("Home", "H"),
-    History("Riwayat", "R"),
-    Report("Laporan", "L"),
-    Budget("Budget", "B")
+private enum class NgepetTab(val label: String, val icon: ImageVector) {
+    Home("Home", Icons.Filled.Home),
+    History("Riwayat", Icons.AutoMirrored.Filled.List),
+    Report("Laporan", Icons.Filled.PieChart),
+    Budget("Budget", Icons.Filled.TrackChanges)
 }
 
 private enum class InputSheetMode { Manual, Voice }
@@ -100,7 +121,14 @@ private data class TransactionUi(
     val amount: String,
     val isIncome: Boolean,
     val source: String,
-    val icon: String,
+    val icon: ImageVector,
+    val color: Color,
+    val bg: Color
+)
+
+private data class CategoryUi(
+    val label: String,
+    val icon: ImageVector,
     val color: Color,
     val bg: Color
 )
@@ -112,25 +140,86 @@ private data class BudgetUi(
     val limit: String,
     val progress: Float,
     val status: String,
-    val icon: String,
+    val icon: ImageVector,
     val color: Color,
     val bg: Color
 )
 
 private val recentTransactions = listOf(
-    TransactionUi("Warung makan", "Makanan", "-Rp 25.000", false, "Suara", "M", Green600, Green50),
-    TransactionUi("Grab ke kampus", "Transport", "-Rp 18.000", false, "Manual", "T", Color(0xFF185FA5), Color(0xFFE6F1FB)),
-    TransactionUi("Gaji freelance", "Pekerjaan", "+Rp 500.000", true, "Manual", "P", Green600, Green50)
+    TransactionUi("Warung makan", "Makanan", "-Rp 25.000", false, "Suara", Icons.Filled.Restaurant, Green600, Green50),
+    TransactionUi("Grab ke kampus", "Transport", "-Rp 18.000", false, "Manual", Icons.Filled.DirectionsBus, Color(0xFF185FA5), Color(0xFFE6F1FB)),
+    TransactionUi("Gaji freelance", "Pekerjaan", "+Rp 500.000", true, "Manual", Icons.Filled.Work, Green600, Green50)
 )
 
 private val historyTransactions = recentTransactions + listOf(
-    TransactionUi("Indomaret", "Belanja", "-Rp 47.000", false, "Suara", "B", Pink400, Pink50),
-    TransactionUi("Tagihan listrik", "Tagihan", "-Rp 120.000", false, "Manual", "I", Warning, WarningBg),
-    TransactionUi("Apotek Kimia Farma", "Kesehatan", "-Rp 35.000", false, "Suara", "K", Danger, DangerBg)
+    TransactionUi("Indomaret", "Belanja", "-Rp 47.000", false, "Suara", Icons.Filled.ShoppingBag, Pink400, Pink50),
+    TransactionUi("Tagihan listrik", "Tagihan", "-Rp 120.000", false, "Manual", Icons.Filled.Receipt, Warning, WarningBg),
+    TransactionUi("Apotek Kimia Farma", "Kesehatan", "-Rp 35.000", false, "Suara", Icons.Filled.Favorite, Danger, DangerBg)
+)
+
+private val transactionCategories = listOf(
+    CategoryUi("Makanan", Icons.Filled.Restaurant, Green600, Green50),
+    CategoryUi("Transport", Icons.Filled.DirectionsBus, Color(0xFF185FA5), Color(0xFFE6F1FB)),
+    CategoryUi("Belanja", Icons.Filled.ShoppingBag, Pink400, Pink50),
+    CategoryUi("Tagihan", Icons.Filled.Receipt, Warning, WarningBg),
+    CategoryUi("Pekerjaan", Icons.Filled.Work, Green600, Green50),
+    CategoryUi("Kesehatan", Icons.Filled.Favorite, Danger, DangerBg),
+    CategoryUi("Lainnya", Icons.Filled.MoreHoriz, Muted, CardSoft)
+)
+
+private data class OnboardingPage(
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
+    val color: Color,
+    val bg: Color
+)
+
+private val onboardingPages = listOf(
+    OnboardingPage(
+        title = "Catat uang harianmu",
+        description = "Pantau pemasukan dan pengeluaran tanpa ribet, dari makan siang sampai gaji freelance.",
+        icon = Icons.Filled.Receipt,
+        color = Green600,
+        bg = Green50
+    ),
+    OnboardingPage(
+        title = "Pakai suara kalau lagi cepat",
+        description = "Bilang transaksimu, cek hasil deteksi, lalu simpan setelah kamu konfirmasi.",
+        icon = Icons.Filled.Mic,
+        color = Pink400,
+        bg = Pink50
+    ),
+    OnboardingPage(
+        title = "Jaga budget sebelum kebablasan",
+        description = "Lihat progres kategori dan dapatkan peringatan saat pengeluaran mulai mendekati limit.",
+        icon = Icons.Filled.TrackChanges,
+        color = Warning,
+        bg = WarningBg
+    )
 )
 
 @Composable
 private fun NgepetApp() {
+    var hasCompletedOnboarding by remember { mutableStateOf(false) }
+    var userName by remember { mutableStateOf("Budi") }
+
+    if (!hasCompletedOnboarding) {
+        OnboardingScreen(
+            initialName = userName,
+            onComplete = { name ->
+                userName = name.ifBlank { "Teman" }
+                hasCompletedOnboarding = true
+            }
+        )
+        return
+    }
+
+    MainAppContent(userName = userName)
+}
+
+@Composable
+private fun MainAppContent(userName: String) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
 
@@ -152,7 +241,7 @@ private fun NgepetApp() {
                 color = SurfaceWarm
             ) {
                 when (selectedTab) {
-                    NgepetTab.Home -> HomeScreen(onAddClick = { sheetMode = InputSheetMode.Manual })
+                    NgepetTab.Home -> HomeScreen(userName = userName)
                     NgepetTab.History -> HistoryScreen()
                     NgepetTab.Report -> ReportScreen()
                     NgepetTab.Budget -> BudgetScreen()
@@ -178,6 +267,110 @@ private fun NgepetApp() {
 }
 
 @Composable
+private fun OnboardingScreen(initialName: String, onComplete: (String) -> Unit) {
+    var currentPage by remember { mutableStateOf(0) }
+    var name by remember { mutableStateOf(initialName) }
+    val page = onboardingPages[currentPage]
+    val isLastPage = currentPage == onboardingPages.lastIndex
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SurfaceWarm)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Ngepet", color = Green800, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text("ngedukasi dompet", color = Muted, fontSize = 12.sp)
+            }
+            TextButton(onClick = { onComplete(name) }) {
+                Text("Lewati", color = Green600)
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(150.dp)
+                    .clip(RoundedCornerShape(36.dp))
+                    .background(page.bg),
+                contentAlignment = Alignment.Center
+            ) {
+                SymbolBox(page.icon, page.color, Color.White.copy(alpha = 0.72f), 86.dp)
+            }
+            Spacer(Modifier.height(28.dp))
+            Text(
+                page.title,
+                color = Ink,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                lineHeight = 32.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                page.description,
+                color = Muted,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp,
+                modifier = Modifier.padding(horizontal = 10.dp)
+            )
+            if (currentPage == 0) {
+                Spacer(Modifier.height(24.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Nama panggilan") },
+                    placeholder = { Text("Contoh: Budi") },
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                onboardingPages.forEachIndexed { index, _ ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(width = if (index == currentPage) 22.dp else 7.dp, height = 7.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(if (index == currentPage) Green600 else Green100)
+                    )
+                }
+            }
+            Button(
+                onClick = {
+                    if (isLastPage) onComplete(name) else currentPage += 1
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Green600),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Text(if (isLastPage) "Mulai pakai Ngepet" else "Lanjut")
+            }
+        }
+    }
+}
+
+@Composable
 private fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
@@ -189,7 +382,7 @@ private fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(onAddClick: () -> Unit) {
+private fun HomeScreen(userName: String) {
     ScreenColumn {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -198,9 +391,9 @@ private fun HomeScreen(onAddClick: () -> Unit) {
         ) {
             Column {
                 Text("Selamat pagi,", color = Muted, fontSize = 11.sp)
-                Text("Halo, Budi!", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("Halo, $userName!", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
-            SymbolBox("N", Green600, Green50, 36.dp)
+            SymbolBox(Icons.Filled.Notifications, Green600, Green50, 36.dp)
         }
         Spacer(Modifier.height(14.dp))
         BalanceCard()
@@ -210,15 +403,6 @@ private fun HomeScreen(onAddClick: () -> Unit) {
         SectionHeader("Transaksi terbaru", "Lihat semua")
         Spacer(Modifier.height(4.dp))
         recentTransactions.forEach { TransactionRow(it) }
-        Spacer(Modifier.weight(1f))
-        Button(
-            onClick = onAddClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Green600),
-            shape = RoundedCornerShape(15.dp)
-        ) {
-            Text("+ Catat sekarang")
-        }
     }
 }
 
@@ -264,7 +448,7 @@ private fun DailyTipCard() {
             .padding(11.dp),
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        SymbolBox("!", Color.White, Green600, 30.dp)
+        SymbolBox(Icons.Filled.Lightbulb, Color.White, Green600, 30.dp)
         Column(Modifier.weight(1f)) {
             Text("Tip hari ini", color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text(
@@ -290,7 +474,7 @@ private fun HistoryScreen() {
             Text("Filter", color = Muted, fontSize = 12.sp)
         }
         Spacer(Modifier.height(12.dp))
-        FilterChips(listOf("Semua" to true, "Suara" to true, "Manual" to false, "Makanan" to false, "Transport" to false))
+        HistoryFilters()
         Spacer(Modifier.height(10.dp))
         LazyColumn {
             item { DateSeparator("Hari ini · 10 Mei") }
@@ -333,10 +517,10 @@ private fun ReportScreen() {
 @Composable
 private fun BudgetScreen() {
     val budgets = listOf(
-        BudgetUi("Makanan", "Harian", "Rp 499.000", "Rp 600.000", 0.83f, "Hampir habis", "M", Green600, Green50),
-        BudgetUi("Belanja", "Bulanan", "Rp 209.000", "Rp 150.000", 1.39f, "Melebihi limit", "B", Pink400, Pink50),
-        BudgetUi("Transport", "Bulanan", "Rp 162.000", "Rp 500.000", 0.32f, "Aman", "T", Color(0xFF185FA5), Color(0xFFE6F1FB)),
-        BudgetUi("Tagihan", "Bulanan", "Rp 120.000", "Rp 200.000", 0.60f, "Aman", "I", Warning, WarningBg)
+        BudgetUi("Makanan", "Harian", "Rp 499.000", "Rp 600.000", 0.83f, "Hampir habis", Icons.Filled.Restaurant, Green600, Green50),
+        BudgetUi("Belanja", "Bulanan", "Rp 209.000", "Rp 150.000", 1.39f, "Melebihi limit", Icons.Filled.ShoppingBag, Pink400, Pink50),
+        BudgetUi("Transport", "Bulanan", "Rp 162.000", "Rp 500.000", 0.32f, "Aman", Icons.Filled.DirectionsBus, Color(0xFF185FA5), Color(0xFFE6F1FB)),
+        BudgetUi("Tagihan", "Bulanan", "Rp 120.000", "Rp 200.000", 0.60f, "Aman", Icons.Filled.Receipt, Warning, WarningBg)
     )
 
     ScreenColumn {
@@ -400,8 +584,8 @@ private fun AddTransactionSheet(
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            InputModeChip("Manual", mode == InputSheetMode.Manual, Modifier.weight(1f)) { onModeChange(InputSheetMode.Manual) }
-            InputModeChip("Suara", mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
+            InputModeChip("Manual", Icons.Filled.Keyboard, mode == InputSheetMode.Manual, Modifier.weight(1f)) { onModeChange(InputSheetMode.Manual) }
+            InputModeChip("Suara", Icons.Filled.Mic, mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
         }
         Spacer(Modifier.height(12.dp))
         if (mode == InputSheetMode.Manual) ManualInputContent() else VoiceInputContent()
@@ -448,14 +632,7 @@ private fun ManualInputContent() {
     Spacer(Modifier.height(10.dp))
     Text("Kategori", color = Muted, fontSize = 11.sp)
     Spacer(Modifier.height(7.dp))
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        listOf("Makanan", "Pekerjaan", "Hiburan", "Transport", "Belanja", "Tagihan", "Lainnya").forEachIndexed { index, label ->
-            CategoryPill(label, selected = index == 0)
-        }
-    }
+    CategoryGrid()
     Spacer(Modifier.height(10.dp))
     FormField("Catatan", "Warung makan siang")
     FormField("Tanggal", "Hari ini, 10 Mei 2026")
@@ -465,6 +642,26 @@ private fun ManualInputContent() {
         colors = ButtonDefaults.buttonColors(containerColor = Green600),
         shape = RoundedCornerShape(13.dp)
     ) { Text("Simpan transaksi") }
+}
+
+@Composable
+private fun CategoryGrid() {
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        transactionCategories.chunked(2).forEach { rowItems ->
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxWidth()) {
+                rowItems.forEach { category ->
+                    CategoryCard(
+                        category = category,
+                        selected = category.label == "Makanan",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (rowItems.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -478,7 +675,7 @@ private fun VoiceInputContent() {
                 .border(2.dp, Green100, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            SymbolBox("M", Color.White, Green600, 54.dp)
+            SymbolBox(Icons.Filled.Mic, Color.White, Green600, 54.dp)
         }
         Spacer(Modifier.height(10.dp))
         WaveBars()
@@ -534,7 +731,12 @@ private fun BottomNavigationBar(
                 .clickable { onAddClick() },
             contentAlignment = Alignment.Center
         ) {
-            Text("+", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Medium)
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Tambah transaksi",
+                tint = Color.White,
+                modifier = Modifier.size(26.dp)
+            )
         }
         NavItem(NgepetTab.Report, selectedTab == NgepetTab.Report, onTabSelected)
         NavItem(NgepetTab.Budget, selectedTab == NgepetTab.Budget, onTabSelected)
@@ -548,7 +750,12 @@ private fun NavItem(tab: NgepetTab, selected: Boolean, onTabSelected: (NgepetTab
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Text(tab.icon, color = if (selected) Green600 else Muted, fontWeight = FontWeight.SemiBold)
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.label,
+            tint = if (selected) Green600 else Muted,
+            modifier = Modifier.size(21.dp)
+        )
         Text(tab.label, color = if (selected) Green600 else Muted, fontSize = 10.sp)
     }
 }
@@ -603,11 +810,46 @@ private fun DateSeparator(text: String) {
 }
 
 @Composable
+private fun HistoryFilters() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterGroup(
+            label = "Sumber input",
+            chips = listOf("Semua" to true, "Suara" to false, "Manual" to false),
+            accentIndex = 1
+        )
+        FilterGroup(
+            label = "Kategori",
+            chips = listOf(
+                "Semua kategori" to true,
+                "Makanan" to false,
+                "Transport" to false,
+                "Belanja" to false,
+                "Tagihan" to false,
+                "Kesehatan" to false
+            )
+        )
+    }
+}
+
+@Composable
+private fun FilterGroup(label: String, chips: List<Pair<String, Boolean>>, accentIndex: Int = -1) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(label, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+        FilterChips(chips = chips, accentIndex = accentIndex)
+    }
+}
+
+@Composable
 private fun FilterChips(chips: List<Pair<String, Boolean>>) {
+    FilterChips(chips = chips, accentIndex = 1)
+}
+
+@Composable
+private fun FilterChips(chips: List<Pair<String, Boolean>>, accentIndex: Int) {
     Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         chips.forEachIndexed { index, chip ->
-            val activeColor = if (index == 1) Pink50 else Green50
-            val textColor = if (index == 1) Pink800 else Green800
+            val activeColor = if (index == accentIndex) Pink50 else Green50
+            val textColor = if (index == accentIndex) Pink800 else Green800
             Text(
                 chip.first,
                 modifier = Modifier
@@ -749,34 +991,47 @@ private fun ProgressBar(progress: Float, color: Color) {
 }
 
 @Composable
-private fun InputModeChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(
+private fun InputModeChip(label: String, icon: ImageVector, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(if (selected) Green50 else CardSoft)
             .border(1.dp, if (selected) Green100 else Color.Black.copy(alpha = 0.1f), RoundedCornerShape(10.dp))
             .clickable { onClick() }
             .padding(8.dp),
-        contentAlignment = Alignment.Center
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (selected) Green800 else Color(0xFF666666),
+            modifier = Modifier.size(15.dp)
+        )
+        Spacer(Modifier.width(5.dp))
         Text(label, color = if (selected) Green800 else Color(0xFF666666), fontSize = 12.sp)
     }
 }
 
 @Composable
-private fun CategoryPill(label: String, selected: Boolean) {
-    Column(
+private fun CategoryCard(category: CategoryUi, selected: Boolean, modifier: Modifier = Modifier) {
+    Row(
         modifier = Modifier
-            .width(64.dp)
+            .then(modifier)
             .clip(RoundedCornerShape(12.dp))
             .background(if (selected) Green50 else CardSoft)
             .border(1.dp, if (selected) Green100 else Color.Black.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(label.take(1), color = if (selected) Green600 else Muted, fontWeight = FontWeight.SemiBold)
-        Text(label, color = if (selected) Green800 else Muted, fontSize = 9.sp, textAlign = TextAlign.Center)
+        SymbolBox(category.icon, category.color, category.bg, 30.dp)
+        Text(
+            category.label,
+            color = if (selected) Green800 else Ink,
+            fontSize = 11.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+        )
     }
 }
 
@@ -820,7 +1075,7 @@ private fun WaveBars() {
 }
 
 @Composable
-private fun SymbolBox(text: String, color: Color, bg: Color, size: Dp) {
+private fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp) {
     Box(
         modifier = Modifier
             .size(size)
@@ -828,7 +1083,12 @@ private fun SymbolBox(text: String, color: Color, bg: Color, size: Dp) {
             .background(bg),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = color, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(size * 0.52f)
+        )
     }
 }
 
