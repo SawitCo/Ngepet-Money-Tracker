@@ -1,19 +1,15 @@
 package com.example.ngepet.presentation
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ngepet.data.local.UserPreferencesRepository
-import com.example.ngepet.data.repository.CategoryRepositoryImpl
-import com.example.ngepet.data.repository.TransactionRepositoryImpl
 import com.example.ngepet.domain.model.Transaction
 import com.example.ngepet.domain.model.TransactionType
-import com.example.ngepet.data.local.NgepetDatabase
-import com.example.ngepet.data.local.entity.CategoryEntity
 import com.example.ngepet.domain.repository.CategoryRepository
 import com.example.ngepet.domain.repository.TransactionRepository
 import com.example.ngepet.presentation.ui.model.CategoryUi
 import com.example.ngepet.presentation.ui.model.TransactionUi
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,14 +18,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = NgepetDatabase.getDatabase(application)
-    private val transactionRepository: TransactionRepository =
-        TransactionRepositoryImpl(database.transactionDao())
-    private val categoryRepository: CategoryRepository =
-        CategoryRepositoryImpl(database.categoryDao())
-    private val userPreferencesRepository = UserPreferencesRepository(application)
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
+) : ViewModel() {
 
     val userName: StateFlow<String?> = userPreferencesRepository.userNameFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
