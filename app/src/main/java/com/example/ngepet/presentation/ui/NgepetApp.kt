@@ -1,7 +1,6 @@
 package com.example.ngepet.presentation.ui
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -54,12 +53,15 @@ import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -153,6 +155,7 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainAppContent(
     userName: String,
@@ -163,6 +166,7 @@ private fun MainAppContent(
 ) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -196,31 +200,21 @@ private fun MainAppContent(
             }
         }
 
-        AnimatedVisibility(
-            visible = sheetMode != null,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.42f))
-                        .clickable { sheetMode = null }
+        sheetMode?.let { mode ->
+            ModalBottomSheet(
+                onDismissRequest = { sheetMode = null },
+                sheetState = sheetState
+            ) {
+                AddTransactionSheet(
+                    mode = mode,
+                    categories = categories,
+                    onModeChange = { sheetMode = it },
+                    onClose = { sheetMode = null },
+                    onSave = { amount, categoryId, note, isExpense ->
+                        onAddTransaction(amount, categoryId, note, isExpense)
+                        sheetMode = null
+                    }
                 )
-                sheetMode?.let { mode ->
-                    AddTransactionSheet(
-                        mode = mode,
-                        categories = categories,
-                        onModeChange = { sheetMode = it },
-                        onClose = { sheetMode = null },
-                        onSave = { amount, categoryId, note, isExpense ->
-                            onAddTransaction(amount, categoryId, note, isExpense)
-                            sheetMode = null
-                        },
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-                }
             }
         }
     }
@@ -565,52 +559,41 @@ private fun BudgetScreen() {
 }
 
 @Composable
-private fun AddTransactionSheet(
-    mode: InputSheetMode,
-    categories: List<CategoryUi>,
-    onModeChange: (InputSheetMode) -> Unit,
-    onClose: () -> Unit,
-    onSave: (Long, Long, String, Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .background(Color.White)
-            .clickable(enabled = false) {}
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        Box(
-            Modifier
-                .align(Alignment.CenterHorizontally)
-                .size(width = 34.dp, height = 4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Color.Black.copy(alpha = 0.12f))
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(if (mode == InputSheetMode.Manual) "Tambah transaksi" else "Tambah via suara", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Text("x", modifier = Modifier.clickable { onClose() }, color = Muted)
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            InputModeChip("Manual", Icons.Filled.Keyboard, mode == InputSheetMode.Manual, Modifier.weight(1f)) { onModeChange(InputSheetMode.Manual) }
-            InputModeChip("Suara", Icons.Filled.Mic, mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
-        }
-        Spacer(Modifier.height(12.dp))
-        if (mode == InputSheetMode.Manual) {
-            ManualInputContent(categories, onSave)
-        } else {
-            VoiceInputContent()
-        }
-    }
-}
+ private fun AddTransactionSheet(
+     mode: InputSheetMode,
+     categories: List<CategoryUi>,
+     onModeChange: (InputSheetMode) -> Unit,
+     onClose: () -> Unit,
+     onSave: (Long, Long, String, Boolean) -> Unit
+ ) {
+     Column(
+         modifier = Modifier
+             .fillMaxWidth()
+             .navigationBarsPadding()
+             .padding(horizontal = 16.dp, vertical = 10.dp)
+     ) {
+         Spacer(Modifier.height(12.dp))
+         Row(
+             modifier = Modifier.fillMaxWidth(),
+             horizontalArrangement = Arrangement.SpaceBetween,
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+             Text(if (mode == InputSheetMode.Manual) "Tambah transaksi" else "Tambah via suara", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+             Text("x", modifier = Modifier.clickable { onClose() }, color = Muted)
+         }
+         Spacer(Modifier.height(12.dp))
+         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+             InputModeChip("Manual", Icons.Filled.Keyboard, mode == InputSheetMode.Manual, Modifier.weight(1f)) { onModeChange(InputSheetMode.Manual) }
+             InputModeChip("Suara", Icons.Filled.Mic, mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
+         }
+         Spacer(Modifier.height(12.dp))
+         if (mode == InputSheetMode.Manual) {
+             ManualInputContent(categories, onSave)
+         } else {
+             VoiceInputContent()
+         }
+     }
+ }
 
 @Composable
 private fun ManualInputContent(categories: List<CategoryUi>, onSave: (Long, Long, String, Boolean) -> Unit) {
