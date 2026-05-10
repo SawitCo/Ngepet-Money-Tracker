@@ -7,8 +7,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -38,18 +36,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.TrackChanges
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -196,27 +198,29 @@ private fun MainAppContent(
 
         AnimatedVisibility(
             visible = sheetMode != null,
-            enter = slideInVertically { it },
-            exit = slideOutVertically { it }
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(200))
         ) {
-            sheetMode?.let { mode ->
+            Box(Modifier.fillMaxSize()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.42f))
                         .clickable { sheetMode = null }
                 )
-                AddTransactionSheet(
-                    mode = mode,
-                    categories = categories,
-                    onModeChange = { sheetMode = it },
-                    onClose = { sheetMode = null },
-                    onSave = { amount, categoryId, note, isExpense ->
-                        onAddTransaction(amount, categoryId, note, isExpense)
-                        sheetMode = null
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
+                sheetMode?.let { mode ->
+                    AddTransactionSheet(
+                        mode = mode,
+                        categories = categories,
+                        onModeChange = { sheetMode = it },
+                        onClose = { sheetMode = null },
+                        onSave = { amount, categoryId, note, isExpense ->
+                            onAddTransaction(amount, categoryId, note, isExpense)
+                            sheetMode = null
+                        },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
     }
@@ -826,7 +830,7 @@ private fun TransactionRow(item: TransactionUi) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        SymbolBox(Icons.Filled.Receipt, Green600, Green50, 36.dp)
+        SymbolBox(iconForName(item.categoryIcon), Green600, Green50, 36.dp)
         Column(Modifier.weight(1f)) {
             Text(item.note, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -1118,7 +1122,7 @@ private fun CategoryCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SymbolBox(Icons.Filled.Receipt, Green600, Green50, 30.dp)
+        SymbolBox(iconForName(category.iconName), Green600, Green50, 30.dp)
         Text(
             category.name,
             color = if (selected) Green800 else Ink,
@@ -1187,6 +1191,21 @@ private fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp) {
 
 private fun formatAmount(amount: Long): String {
     return String.format("%,d", amount).replace(",", ".")
+}
+
+private fun iconForName(name: String): ImageVector {
+    return when (name) {
+        "Restaurant" -> Icons.Filled.Restaurant
+        "Commute" -> Icons.Filled.DirectionsBus
+        "Payments" -> Icons.Filled.Work
+        "ShoppingCart" -> Icons.Filled.ShoppingBag
+        "Movie" -> Icons.Filled.Favorite
+        "Receipt" -> Icons.Filled.Receipt
+        "LocalHospital" -> Icons.Filled.Favorite
+        "MoreHoriz" -> Icons.Filled.MoreHoriz
+        "Wallet" -> Icons.Filled.AccountBalanceWallet
+        else -> Icons.Filled.Receipt
+    }
 }
 
 @Preview(showBackground = true)
