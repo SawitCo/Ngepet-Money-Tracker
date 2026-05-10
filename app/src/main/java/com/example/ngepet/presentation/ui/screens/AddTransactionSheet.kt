@@ -99,7 +99,7 @@ fun AddTransactionSheet(
 
 @Composable
 fun ManualInputContent(categories: List<CategoryUi>, onSave: (Long, Long, String, Boolean) -> Unit) {
-    var amount by remember { mutableStateOf("") }
+    var amountRaw by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("Pengeluaran") }
     var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.id ?: "") }
@@ -162,10 +162,11 @@ fun ManualInputContent(categories: List<CategoryUi>, onSave: (Long, Long, String
         singleLine = true,
         shape = RoundedCornerShape(14.dp)
     )
+    val amountDisplay = formatRupiah(amountRaw)
     Spacer(Modifier.height(10.dp))
     OutlinedTextField(
-        value = amount,
-        onValueChange = { amount = it.filter { c -> c.isDigit() } },
+        value = amountDisplay,
+        onValueChange = { amountRaw = it.filter { c -> c.isDigit() } },
         label = { Text("Nominal") },
         placeholder = { Text("0") },
         modifier = Modifier.fillMaxWidth(),
@@ -176,14 +177,14 @@ fun ManualInputContent(categories: List<CategoryUi>, onSave: (Long, Long, String
     )
     Button(
         onClick = { 
-            val amountValue = amount.toLongOrNull() ?: 0L
+            val amountValue = amountRaw.toLongOrNull() ?: 0L
             val catId = selectedCategory.toLongOrNull() ?: 0L
             onSave(amountValue, catId, note, selectedType == "Pengeluaran") 
         },
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Green600),
         shape = RoundedCornerShape(13.dp),
-        enabled = amount.isNotBlank() && selectedCategory.isNotBlank()
+        enabled = amountRaw.isNotBlank() && selectedCategory.isNotBlank()
     ) { Text("Simpan transaksi") }
 }
 

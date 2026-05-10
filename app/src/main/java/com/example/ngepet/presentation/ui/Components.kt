@@ -230,3 +230,9 @@ fun iconForName(name: String): ImageVector {
         else -> Icons.Filled.Receipt
     }
 }
+
+fun formatRupiah(amount: String): String {
+    val digits = amount.filter { it.isDigit() }
+    if (digits.isEmpty()) return ""
+    return digits.reversed().chunked(3).joinToString(".").reversed()
+}
