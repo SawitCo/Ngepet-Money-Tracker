@@ -4,21 +4,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 data class TransactionUi(
-    val title: String,
-    val category: String,
-    val amount: String,
-    val isIncome: Boolean,
-    val source: String,
-    val icon: ImageVector,
-    val color: Color,
-    val bg: Color
+    val id: String,
+    val amount: Long,
+    val categoryName: String,
+    val categoryIcon: String,
+    val note: String,
+    val dateMillis: Long,
+    val isExpense: Boolean,
+    val source: String = "Manual"
 )
 
 data class CategoryUi(
-    val label: String,
-    val icon: ImageVector,
-    val color: Color,
-    val bg: Color
+    val id: String,
+    val name: String,
+    val iconName: String
 )
 
 data class BudgetUi(

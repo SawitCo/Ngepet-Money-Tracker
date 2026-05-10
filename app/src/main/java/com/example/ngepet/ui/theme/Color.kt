@@ -14,6 +14,11 @@ val Pink400 = Color(0xFFD4537E)
 val Pink600 = Color(0xFF993556)
 val Pink800 = Color(0xFF72243E)
 
+val Blue50 = Color(0xFFE3F2FD)
+val Blue600 = Color(0xFF1E88E5)
+val Orange50 = Color(0xFFFFF3E0)
+val Orange600 = Color(0xFFFB8C00)
+
 val Danger = Color(0xFFA32D2D)
 val DangerBg = Color(0xFFFCEBEB)
 val Warning = Color(0xFFBA7517)

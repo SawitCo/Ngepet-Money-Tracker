@@ -75,10 +75,8 @@ import androidx.compose.ui.unit.sp
 import com.example.ngepet.presentation.ui.model.BudgetUi
 import com.example.ngepet.presentation.ui.model.CategoryUi
 import com.example.ngepet.presentation.ui.model.TransactionUi
-import com.example.ngepet.presentation.ui.model.historyTransactions
+import com.example.ngepet.presentation.ui.model.OnboardingPageUi
 import com.example.ngepet.presentation.ui.model.onboardingPages
-import com.example.ngepet.presentation.ui.model.recentTransactions
-import com.example.ngepet.presentation.ui.model.transactionCategories
 import com.example.ngepet.ui.theme.CardSoft
 import com.example.ngepet.ui.theme.Danger
 import com.example.ngepet.ui.theme.DangerBg
@@ -97,6 +95,11 @@ import com.example.ngepet.ui.theme.Warning
 import com.example.ngepet.ui.theme.WarningBg
 import com.example.ngepet.ui.theme.WarningText
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.ngepet.presentation.MainViewModel
+import java.util.Date
+
 private enum class NgepetTab(val label: String, val icon: ImageVector) {
     Home("Home", Icons.Filled.Home),
     History("Riwayat", Icons.AutoMirrored.Filled.List),
@@ -105,13 +108,6 @@ private enum class NgepetTab(val label: String, val icon: ImageVector) {
 }
 
 private enum class InputSheetMode { Manual, Voice }
-
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.example.ngepet.presentation.MainViewModel
-import com.example.ngepet.presentation.ui.model.CategoryUi
-import java.util.Date
 
 @Composable
 fun NgepetApp(viewModel: MainViewModel = viewModel()) {
@@ -779,15 +775,15 @@ private fun TransactionRow(item: TransactionUi) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        SymbolBox(item.icon, item.color, item.bg, 36.dp)
+        SymbolBox(Icons.Filled.Receipt, Green600, Green50, 36.dp)
         Column(Modifier.weight(1f)) {
-            Text(item.title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(item.note, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(item.category, color = Muted, fontSize = 10.sp)
+                Text(item.categoryName, color = Muted, fontSize = 10.sp)
                 SourceBadge(item.source)
             }
         }
-        Text(item.amount, color = if (item.isIncome) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("Rp ${item.amount}", color = if (!item.isExpense) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -1071,9 +1067,9 @@ private fun CategoryCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SymbolBox(category.icon, category.color, category.bg, 30.dp)
+        SymbolBox(Icons.Filled.Receipt, Green600, Green50, 30.dp)
         Text(
-            category.label,
+            category.name,
             color = if (selected) Green800 else Ink,
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
