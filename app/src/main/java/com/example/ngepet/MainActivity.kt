@@ -7,7 +7,9 @@ import androidx.activity.viewModels
 import com.example.ngepet.presentation.MainViewModel
 import com.example.ngepet.presentation.ui.NgepetApp
 import com.example.ngepet.presentation.ui.theme.NgepetTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 

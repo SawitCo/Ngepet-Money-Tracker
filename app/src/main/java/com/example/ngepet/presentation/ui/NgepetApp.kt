@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.ngepet.presentation.MainViewModel
 import com.example.ngepet.presentation.ui.model.CategoryUi
 import com.example.ngepet.presentation.ui.screens.AddTransactionSheet
@@ -32,7 +32,7 @@ import com.example.ngepet.presentation.ui.theme.SurfaceWarm
 import java.util.Date
 
 @Composable
-fun NgepetApp(viewModel: MainViewModel = viewModel()) {
+fun NgepetApp(viewModel: MainViewModel = hiltViewModel()) {
     val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
