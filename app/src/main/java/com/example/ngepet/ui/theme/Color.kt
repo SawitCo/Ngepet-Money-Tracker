@@ -2,10 +2,24 @@ package com.example.ngepet.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Green50 = Color(0xFFEAF3DE)
+val Green100 = Color(0xFFC0DD97)
+val Green400 = Color(0xFF639922)
+val Green600 = Color(0xFF3B6D11)
+val Green800 = Color(0xFF27500A)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Pink50 = Color(0xFFFBEAF0)
+val Pink100 = Color(0xFFF4C0D1)
+val Pink400 = Color(0xFFD4537E)
+val Pink600 = Color(0xFF993556)
+val Pink800 = Color(0xFF72243E)
+
+val Danger = Color(0xFFA32D2D)
+val DangerBg = Color(0xFFFCEBEB)
+val Warning = Color(0xFFBA7517)
+val WarningBg = Color(0xFFFAEEDA)
+val WarningText = Color(0xFF854F0B)
+val SurfaceWarm = Color(0xFFF1EFE8)
+val CardSoft = Color(0xFFF5F5F3)
+val Ink = Color(0xFF1A1A1A)
+val Muted = Color(0xFF888780)
