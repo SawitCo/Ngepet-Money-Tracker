@@ -1,10 +1,5 @@
 package com.example.ngepet.presentation.ui
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,7 +8,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.ngepet.presentation.MainViewModel
 import com.example.ngepet.presentation.SnackbarEvent
 import com.example.ngepet.presentation.ui.model.CategoryUi
@@ -38,9 +38,14 @@ import com.example.ngepet.presentation.ui.screens.OnboardingScreen
 import com.example.ngepet.presentation.ui.screens.ReportScreen
 import com.example.ngepet.presentation.ui.theme.NgepetTheme
 import com.example.ngepet.presentation.ui.theme.SurfaceWarm
-import com.example.ngepet.domain.model.CategoryBreakdown
 import kotlinx.coroutines.launch
-import java.util.Date
+
+sealed class NavRoute(val route: String, val tab: NgepetTab) {
+    data object Home : NavRoute("home", NgepetTab.Home)
+    data object History : NavRoute("history", NgepetTab.History)
+    data object Report : NavRoute("report", NgepetTab.Report)
+    data object Budget : NavRoute("budget", NgepetTab.Budget)
+}
 
 @Composable
 fun NgepetApp(viewModel: MainViewModel = hiltViewModel()) {
@@ -79,7 +84,6 @@ fun NgepetApp(viewModel: MainViewModel = hiltViewModel()) {
         currentBalance = currentBalance,
         monthlyIncome = monthlyIncome,
         monthlyExpense = monthlyExpense,
-        reportBreakdown = reportBreakdown,
         budgetList = budgetList,
         currentTip = currentTip,
         onAddTransaction = { amount, categoryId, note, dateMillis, isExpense ->
@@ -105,7 +109,6 @@ private fun MainAppContent(
     currentBalance: Long,
     monthlyIncome: Long,
     monthlyExpense: Long,
-    reportBreakdown: List<CategoryBreakdown>,
     budgetList: List<com.example.ngepet.presentation.ui.model.BudgetUi>,
     currentTip: String,
     onAddTransaction: (Long, Long, String, Long, Boolean) -> Unit,
@@ -116,7 +119,13 @@ private fun MainAppContent(
     onDeleteBudget: (String) -> Unit,
     snackbarEvent: kotlinx.coroutines.flow.Flow<SnackbarEvent>
 ) {
-    var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination
+    val selectedTab = NgepetTab.entries.firstOrNull { tab ->
+        currentRoute?.hierarchy?.any { it.route == navRouteForTab(tab) } == true
+    } ?: NgepetTab.Home
+
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
     var editTxn by remember { mutableStateOf<TransactionUi?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -140,49 +149,50 @@ private fun MainAppContent(
             bottomBar = {
                 BottomNavigationBar(
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                    onTabSelected = { tab ->
+                        navController.navigate(navRouteForTab(tab)) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onAddClick = { sheetMode = InputSheetMode.Manual; editTxn = null }
                 )
             }
         ) { innerPadding ->
-            Surface(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                color = SurfaceWarm
+            NavHost(
+                navController = navController,
+                startDestination = NavRoute.Home.route,
+                modifier = Modifier.padding(innerPadding)
             ) {
-                AnimatedContent(targetState = selectedTab,
-                    transitionSpec = {
-                        val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                        slideInHorizontally(animationSpec = tween(200)) { width -> direction * width } togetherWith
-                            slideOutHorizontally(animationSpec = tween(200)) { width -> -direction * width }
-                    },
-                    label = "TabSlide"
-                ) { tab ->
-                    when (tab) {
-                        NgepetTab.Home -> HomeScreen(
-                            userName = userName,
-                            transactions = transactions.take(5),
-                            currentBalance = currentBalance,
-                            monthlyIncome = monthlyIncome,
-                            monthlyExpense = monthlyExpense,
-                            currentTip = currentTip
-                        )
-                        NgepetTab.History -> HistoryScreen(
-                            transactions = transactions,
-                            onEditTransaction = { txn ->
-                                editTxn = txn
-                                sheetMode = InputSheetMode.Manual
-                            },
-                            onDeleteTransaction = onDeleteTransaction
-                        )
-                        NgepetTab.Report -> ReportScreen(transactions = transactions)
-                        NgepetTab.Budget -> BudgetScreen(
-                            budgets = budgetList,
-                            categories = categories,
-                            onAddBudget = onAddBudget,
-                            onUpdateBudget = onUpdateBudget,
-                            onDeleteBudget = onDeleteBudget
-                        )
-                    }
+                composable(NavRoute.Home.route) {
+                    HomeScreen(
+                        userName = userName,
+                        transactions = transactions.take(5),
+                        currentBalance = currentBalance,
+                        monthlyIncome = monthlyIncome,
+                        monthlyExpense = monthlyExpense,
+                        currentTip = currentTip
+                    )
+                }
+                composable(NavRoute.History.route) {
+                    HistoryScreen(
+                        transactions = transactions,
+                        onEditTransaction = { txn -> editTxn = txn; sheetMode = InputSheetMode.Manual },
+                        onDeleteTransaction = onDeleteTransaction
+                    )
+                }
+                composable(NavRoute.Report.route) {
+                    ReportScreen(transactions = transactions)
+                }
+                composable(NavRoute.Budget.route) {
+                    BudgetScreen(
+                        budgets = budgetList,
+                        categories = categories,
+                        onAddBudget = onAddBudget,
+                        onUpdateBudget = onUpdateBudget,
+                        onDeleteBudget = onDeleteBudget
+                    )
                 }
             }
         }
@@ -213,10 +223,15 @@ private fun MainAppContent(
     }
 }
 
+private fun navRouteForTab(tab: NgepetTab): String = when (tab) {
+    NgepetTab.Home -> NavRoute.Home.route
+    NgepetTab.History -> NavRoute.History.route
+    NgepetTab.Report -> NavRoute.Report.route
+    NgepetTab.Budget -> NavRoute.Budget.route
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun NgepetPreview() {
-    NgepetTheme {
-        NgepetApp()
-    }
+    NgepetTheme { NgepetApp() }
 }
