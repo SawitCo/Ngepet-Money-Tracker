@@ -8,8 +8,9 @@ data class ReportData(
 )
 
 data class CategoryBreakdown(
-    val categoryName: String,
+    val categoryId: String = "",
+    val categoryName: String = "",
     val percentage: Double,
     val amount: Double,
-    val colorHex: String
+    val colorHex: String = ""
 )

@@ -1,8 +1,6 @@
 package com.example.ngepet.presentation.ui.screens
 
 import com.example.ngepet.presentation.ui.*
-import com.example.ngepet.presentation.ui.model.*
-import com.example.ngepet.presentation.ui.theme.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lightbulb
@@ -38,7 +35,14 @@ import com.example.ngepet.presentation.ui.theme.Ink
 import com.example.ngepet.presentation.ui.theme.Muted
 
 @Composable
-fun HomeScreen(userName: String, transactions: List<TransactionUi>, currentBalance: Long) {
+fun HomeScreen(
+    userName: String,
+    transactions: List<TransactionUi>,
+    currentBalance: Long,
+    monthlyIncome: Long,
+    monthlyExpense: Long,
+    currentTip: String
+) {
     var showDailyTip by remember { mutableStateOf(true) }
 
     ScreenColumn {
@@ -48,16 +52,15 @@ fun HomeScreen(userName: String, transactions: List<TransactionUi>, currentBalan
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Selamat pagi,", color = Muted, fontSize = 11.sp)
-                Text("Halo, $userName!", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("Halo, $userName!", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             }
             SymbolBox(Icons.Filled.Notifications, Green600, Green50, 36.dp)
         }
         Spacer(Modifier.height(14.dp))
-        BalanceCard(currentBalance = currentBalance)
+        BalanceCard(currentBalance = currentBalance, monthlyIncome = monthlyIncome, monthlyExpense = monthlyExpense)
         if (showDailyTip) {
             Spacer(Modifier.height(12.dp))
-            DailyTipCard(onDismiss = { showDailyTip = false })
+            DailyTipsCard(tip = currentTip, onDismiss = { showDailyTip = false })
             Spacer(Modifier.height(14.dp))
         } else {
             Spacer(Modifier.height(14.dp))
@@ -69,7 +72,7 @@ fun HomeScreen(userName: String, transactions: List<TransactionUi>, currentBalan
 }
 
 @Composable
-fun BalanceCard(currentBalance: Long) {
+fun BalanceCard(currentBalance: Long, monthlyIncome: Long, monthlyExpense: Long) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,8 +84,8 @@ fun BalanceCard(currentBalance: Long) {
         Text("Rp ${formatAmount(currentBalance)}", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BalanceMiniCard("Masuk bulan ini", "Rp 3.500.000", Modifier.weight(1f))
-            BalanceMiniCard("Keluar bulan ini", "Rp 1.160.000", Modifier.weight(1f))
+            BalanceMiniCard("Masuk bulan ini", "Rp ${formatAmount(monthlyIncome)}", Modifier.weight(1f))
+            BalanceMiniCard("Keluar bulan ini", "Rp ${formatAmount(monthlyExpense)}", Modifier.weight(1f))
         }
     }
 }
@@ -101,7 +104,7 @@ fun BalanceMiniCard(label: String, value: String, modifier: Modifier = Modifier)
 }
 
 @Composable
-fun DailyTipCard(onDismiss: () -> Unit) {
+fun DailyTipsCard(tip: String, onDismiss: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,9 +115,9 @@ fun DailyTipCard(onDismiss: () -> Unit) {
     ) {
         SymbolBox(Icons.Filled.Lightbulb, Color.White, Green600, 30.dp)
         Column(Modifier.weight(1f)) {
-            Text("Tip hari ini", color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text("Tips hari ini", color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text(
-                "Coba alokasikan 20% pendapatanmu untuk tabungan darurat sebelum belanja.",
+                tip,
                 color = Green800,
                 fontSize = 11.sp,
                 lineHeight = 17.sp

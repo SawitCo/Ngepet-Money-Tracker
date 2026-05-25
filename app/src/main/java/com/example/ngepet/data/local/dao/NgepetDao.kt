@@ -14,6 +14,9 @@ interface TransactionDao {
 
     @Insert
     suspend fun insertTransaction(transaction: TransactionEntity): @JvmSuppressWildcards Long
+
+    @Query("DELETE FROM transactions WHERE id = :id")
+    fun deleteTransactionById(id: Long)
 }
 
 @Dao

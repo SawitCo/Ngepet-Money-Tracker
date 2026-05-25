@@ -19,11 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -49,14 +44,7 @@ import com.example.ngepet.presentation.ui.theme.WarningBg
 import com.example.ngepet.presentation.ui.theme.WarningText
 
 @Composable
-fun BudgetScreen() {
-    val budgets = listOf(
-        BudgetUi("Makanan", "Harian", "Rp 499.000", "Rp 600.000", 0.83f, "Hampir habis", Icons.Filled.Restaurant, Green600, Green50),
-        BudgetUi("Belanja", "Bulanan", "Rp 209.000", "Rp 150.000", 1.39f, "Melebihi limit", Icons.Filled.ShoppingBag, Pink400, Pink50),
-        BudgetUi("Transport", "Bulanan", "Rp 162.000", "Rp 500.000", 0.32f, "Aman", Icons.Filled.DirectionsBus, Color(0xFF185FA5), Color(0xFFE6F1FB)),
-        BudgetUi("Tagihan", "Bulanan", "Rp 120.000", "Rp 200.000", 0.60f, "Aman", Icons.Filled.Receipt, Warning, WarningBg)
-    )
-
+fun BudgetScreen(budgets: List<BudgetUi>) {
     ScreenColumn {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -103,6 +91,7 @@ fun BudgetCard(item: BudgetUi) {
         isWarn -> WarningText
         else -> Green800
     }
+    val icon = iconForName(item.iconName)
 
     Column(
         modifier = Modifier
@@ -114,7 +103,7 @@ fun BudgetCard(item: BudgetUi) {
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SymbolBox(item.icon, item.color, item.bg, 32.dp)
+                SymbolBox(icon, barColor, CardSoft, 32.dp)
                 Column {
                     Text(item.category, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Text(item.period, color = Muted, fontSize = 10.sp)
@@ -129,7 +118,8 @@ fun BudgetCard(item: BudgetUi) {
         ProgressBar(item.progress.coerceAtMost(1f), barColor)
         Spacer(Modifier.height(7.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(if (isOver) "+Rp 59.000 melebihi limit" else "${(item.progress * 100).toInt()}% terpakai", color = if (isOver) Danger else Muted, fontSize = 10.sp)
+            val overText = if (isOver && item.overAmount > 0) "+Rp ${formatAmount(item.overAmount)} melebihi limit" else "${(item.progress * 100).toInt()}% terpakai"
+            Text(overText, color = if (isOver) Danger else Muted, fontSize = 10.sp)
             Text(
                 item.status,
                 modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(badgeBg).padding(horizontal = 8.dp, vertical = 3.dp),
