@@ -1,26 +1,35 @@
 package com.example.ngepet.presentation.ui
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.ngepet.presentation.MainViewModel
+import com.example.ngepet.presentation.SnackbarEvent
 import com.example.ngepet.presentation.ui.model.CategoryUi
+import com.example.ngepet.presentation.ui.model.TransactionUi
 import com.example.ngepet.presentation.ui.screens.AddTransactionSheet
 import com.example.ngepet.presentation.ui.screens.BudgetScreen
 import com.example.ngepet.presentation.ui.screens.HistoryScreen
@@ -29,11 +38,12 @@ import com.example.ngepet.presentation.ui.screens.OnboardingScreen
 import com.example.ngepet.presentation.ui.screens.ReportScreen
 import com.example.ngepet.presentation.ui.theme.NgepetTheme
 import com.example.ngepet.presentation.ui.theme.SurfaceWarm
-import java.util.Date
 import com.example.ngepet.domain.model.CategoryBreakdown
+import kotlinx.coroutines.launch
+import java.util.Date
 
 @Composable
-fun NgepetApp(viewModel: MainViewModel = viewModel()) {
+fun NgepetApp(viewModel: MainViewModel = hiltViewModel()) {
     val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -45,9 +55,6 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
     val reportBreakdown by viewModel.reportBreakdown.collectAsState()
     val budgetList by viewModel.budgetList.collectAsState()
     val currentTip by viewModel.currentTip.collectAsState()
-    val voiceResult by viewModel.voiceResult.collectAsState()
-    val isListening by viewModel.isListening.collectAsState()
-    val voiceError by viewModel.voiceError.collectAsState()
 
     val categories = categoriesEntity.map {
         CategoryUi(id = it.id.toString(), name = it.name, iconName = it.iconName)
@@ -75,15 +82,17 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
         reportBreakdown = reportBreakdown,
         budgetList = budgetList,
         currentTip = currentTip,
-        voiceResult = voiceResult,
-        isListening = isListening,
-        voiceError = voiceError,
-        onAddTransaction = { amount, categoryId, note, isExpense ->
-            viewModel.addTransaction(amount, categoryId, note, Date().time, isExpense)
+        onAddTransaction = { amount, categoryId, note, dateMillis, isExpense ->
+            viewModel.addTransaction(amount, categoryId, note, dateMillis, isExpense)
         },
-        onStartVoice = { viewModel.startVoiceRecognition() },
-        onStopVoice = { viewModel.stopVoiceRecognition() },
-        onClearVoice = { viewModel.clearVoiceResult() }
+        onUpdateTransaction = { id, amount, categoryId, note, dateMillis, isExpense ->
+            viewModel.updateTransaction(id, amount, categoryId, note, dateMillis, isExpense)
+        },
+        onDeleteTransaction = { id -> viewModel.deleteTransaction(id) },
+        onAddBudget = { catId, limit -> viewModel.addBudget(catId, limit) },
+        onUpdateBudget = { id, limit -> viewModel.updateBudget(id, limit) },
+        onDeleteBudget = { id -> viewModel.deleteBudget(id) },
+        snackbarEvent = viewModel.snackbarEvent
     )
 }
 
@@ -91,44 +100,63 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
 @Composable
 private fun MainAppContent(
     userName: String,
-    transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>,
+    transactions: List<TransactionUi>,
     categories: List<CategoryUi>,
     currentBalance: Long,
     monthlyIncome: Long,
     monthlyExpense: Long,
-    reportBreakdown: List<com.example.ngepet.domain.model.CategoryBreakdown>,
+    reportBreakdown: List<CategoryBreakdown>,
     budgetList: List<com.example.ngepet.presentation.ui.model.BudgetUi>,
     currentTip: String,
-    voiceResult: com.example.ngepet.presentation.VoiceResult?,
-    isListening: Boolean,
-    voiceError: String?,
-    onAddTransaction: (Long, Long, String, Boolean) -> Unit,
-    onStartVoice: () -> Unit,
-    onStopVoice: () -> Unit,
-    onClearVoice: () -> Unit
+    onAddTransaction: (Long, Long, String, Long, Boolean) -> Unit,
+    onUpdateTransaction: (String, Long, Long, String, Long, Boolean) -> Unit,
+    onDeleteTransaction: (String) -> Unit,
+    onAddBudget: (Long, Long) -> Unit,
+    onUpdateBudget: (String, Long) -> Unit,
+    onDeleteBudget: (String) -> Unit,
+    snackbarEvent: kotlinx.coroutines.flow.Flow<SnackbarEvent>
 ) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
+    var editTxn by remember { mutableStateOf<TransactionUi?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(snackbarEvent) {
+        snackbarEvent.collect { event ->
+            val msg = when (event) {
+                is SnackbarEvent.Success -> event.message
+                is SnackbarEvent.Error -> event.message
+            }
+            scope.launch { snackbarHostState.showSnackbar(msg) }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = SurfaceWarm,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 BottomNavigationBar(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
-                    onAddClick = { sheetMode = InputSheetMode.Manual }
+                    onAddClick = { sheetMode = InputSheetMode.Manual; editTxn = null }
                 )
             }
         ) { innerPadding ->
             Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 color = SurfaceWarm
             ) {
-                Crossfade(targetState = selectedTab, animationSpec = tween(150)) { tab ->
+                AnimatedContent(targetState = selectedTab,
+                    transitionSpec = {
+                        val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                        slideInHorizontally(animationSpec = tween(200)) { width -> direction * width } togetherWith
+                            slideOutHorizontally(animationSpec = tween(200)) { width -> -direction * width }
+                    },
+                    label = "TabSlide"
+                ) { tab ->
                     when (tab) {
                         NgepetTab.Home -> HomeScreen(
                             userName = userName,
@@ -138,41 +166,47 @@ private fun MainAppContent(
                             monthlyExpense = monthlyExpense,
                             currentTip = currentTip
                         )
-                        NgepetTab.History -> HistoryScreen(transactions = transactions)
-                        NgepetTab.Report -> ReportScreen(
-                            totalExpense = monthlyExpense,
-                            breakdown = reportBreakdown
+                        NgepetTab.History -> HistoryScreen(
+                            transactions = transactions,
+                            onEditTransaction = { txn ->
+                                editTxn = txn
+                                sheetMode = InputSheetMode.Manual
+                            },
+                            onDeleteTransaction = onDeleteTransaction
                         )
-                        NgepetTab.Budget -> BudgetScreen(budgets = budgetList)
+                        NgepetTab.Report -> ReportScreen(transactions = transactions)
+                        NgepetTab.Budget -> BudgetScreen(
+                            budgets = budgetList,
+                            categories = categories,
+                            onAddBudget = onAddBudget,
+                            onUpdateBudget = onUpdateBudget,
+                            onDeleteBudget = onDeleteBudget
+                        )
                     }
                 }
             }
         }
 
-        sheetMode?.let { mode ->
+        val currentMode = sheetMode
+        if (currentMode != null) {
             ModalBottomSheet(
-                onDismissRequest = {
-                    sheetMode = null
-                    onStopVoice()
-                    onClearVoice()
-                },
+                onDismissRequest = { sheetMode = null; editTxn = null },
                 sheetState = sheetState
             ) {
                 AddTransactionSheet(
-                    mode = mode,
+                    mode = currentMode,
                     categories = categories,
-                    voiceResult = voiceResult,
-                    isListening = isListening,
-                    voiceError = voiceError,
+                    editTxn = editTxn,
                     onModeChange = { sheetMode = it },
-                    onClose = { sheetMode = null },
-                    onSave = { amount, categoryId, note, isExpense ->
-                        onAddTransaction(amount, categoryId, note, isExpense)
+                    onClose = { sheetMode = null; editTxn = null },
+                    onSave = { amount, categoryId, note, dateMillis, isExpense ->
+                        onAddTransaction(amount, categoryId, note, dateMillis, isExpense)
                         sheetMode = null
                     },
-                    onStartVoice = onStartVoice,
-                    onStopVoice = onStopVoice,
-                    onClearVoice = onClearVoice
+                    onUpdate = { id, amount, categoryId, note, dateMillis, isExpense ->
+                        onUpdateTransaction(id, amount, categoryId, note, dateMillis, isExpense)
+                        sheetMode = null; editTxn = null
+                    }
                 )
             }
         }

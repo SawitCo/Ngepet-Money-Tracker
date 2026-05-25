@@ -6,6 +6,7 @@ import com.example.ngepet.presentation.ui.theme.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,12 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ngepet.presentation.ui.theme.Green50
 import com.example.ngepet.presentation.ui.theme.Green600
-import com.example.ngepet.presentation.ui.theme.Green800
 import com.example.ngepet.presentation.ui.theme.Ink
 import com.example.ngepet.presentation.ui.theme.Muted
 import com.example.ngepet.presentation.ui.theme.Pink400
 import com.example.ngepet.presentation.ui.theme.Warning
 import com.example.ngepet.domain.model.CategoryBreakdown
+import com.example.ngepet.presentation.ui.model.TransactionUi
+import java.util.Calendar
 
 val chartColors = listOf(
     Green600, Pink400, Warning, Color(0xFF185FA5),
@@ -45,10 +51,63 @@ val chartColors = listOf(
 )
 
 @Composable
-fun ReportScreen(
-    totalExpense: Long,
-    breakdown: List<CategoryBreakdown>
-) {
+fun ReportScreen(transactions: List<TransactionUi>) {
+    var selectedPeriod by remember { mutableStateOf("Bulanan") }
+    var selectedSource by remember { mutableStateOf("Semua") }
+
+    val now = Calendar.getInstance()
+    val periodStart: Long
+    val periodEnd: Long
+
+    when (selectedPeriod) {
+        "Harian" -> {
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            periodStart = cal.timeInMillis
+            cal.add(Calendar.DAY_OF_MONTH, 1)
+            periodEnd = cal.timeInMillis
+        }
+        "Mingguan" -> {
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            periodStart = cal.timeInMillis
+            cal.add(Calendar.WEEK_OF_YEAR, 1)
+            periodEnd = cal.timeInMillis
+        }
+        else -> {
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            periodStart = cal.timeInMillis
+            cal.add(Calendar.MONTH, 1)
+            periodEnd = cal.timeInMillis
+        }
+    }
+
+    val filtered = transactions.filter { txn ->
+        val matchesPeriod = txn.dateMillis in periodStart until periodEnd
+        val matchesSource = selectedSource == "Semua" || txn.source == selectedSource
+        matchesPeriod && matchesSource
+    }
+
+    val expenseTxs = filtered.filter { it.isExpense }
+    val totalExpense = expenseTxs.sumOf { it.amount }
+    val categories = expenseTxs.groupBy { it.categoryName }
+    val breakdown = if (totalExpense > 0) {
+        categories.map { (name, txs) ->
+            val amount = txs.sumOf { it.amount }
+            CategoryBreakdown(
+                categoryName = name,
+                percentage = amount.toDouble() / totalExpense,
+                amount = amount.toDouble()
+            )
+        }.sortedByDescending { it.percentage }
+    } else emptyList()
+
     ScreenColumn {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -60,12 +119,15 @@ fun ReportScreen(
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            PeriodChip("Harian", false)
-            PeriodChip("Mingguan", false)
-            PeriodChip("Bulanan", true)
+            PeriodChip("Harian", selectedPeriod == "Harian", onClick = { selectedPeriod = "Harian" })
+            PeriodChip("Mingguan", selectedPeriod == "Mingguan", onClick = { selectedPeriod = "Mingguan" })
+            PeriodChip("Bulanan", selectedPeriod == "Bulanan", onClick = { selectedPeriod = "Bulanan" })
         }
         Spacer(Modifier.height(10.dp))
-        FilterChips(listOf("Semua" to true, "Suara" to true, "Manual" to false))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SourceChip("Semua", selectedSource == "Semua", onClick = { selectedSource = "Semua" })
+            SourceChip("Manual", selectedSource == "Manual", onClick = { selectedSource = "Manual" })
+        }
         Spacer(Modifier.height(18.dp))
         DonutChart(totalExpense = totalExpense, breakdown = breakdown)
         Spacer(Modifier.height(18.dp))
@@ -82,15 +144,31 @@ fun ReportScreen(
 }
 
 @Composable
-fun PeriodChip(label: String, selected: Boolean) {
+fun PeriodChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Text(
         label,
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(if (selected) Green600 else Color.Transparent)
             .border(1.dp, if (selected) Green600 else Color.Black.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+            .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         color = if (selected) Color.White else Muted,
+        fontSize = 11.sp
+    )
+}
+
+@Composable
+fun SourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) Green50 else CardSoft)
+            .border(1.dp, if (selected) Green100 else Color.Black.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        color = if (selected) Green800 else Color(0xFF666666),
         fontSize = 11.sp
     )
 }
@@ -109,10 +187,7 @@ fun DonutChart(totalExpense: Long, breakdown: List<CategoryBreakdown>) {
                 var startAngle = -90f
                 breakdown.forEachIndexed { index, item ->
                     val sweep = (item.percentage * 360).toFloat()
-                    drawArc(
-                        chartColors[index % chartColors.size],
-                        startAngle, sweep, false, topLeft, chartSize, style = stroke
-                    )
+                    drawArc(chartColors[index % chartColors.size], startAngle, sweep, false, topLeft, chartSize, style = stroke)
                     startAngle += sweep
                 }
             }

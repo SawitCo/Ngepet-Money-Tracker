@@ -1,3 +1,93 @@
 <resources>
     <string name="app_name">Ngepet</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">Riwayat</string>
+    <string name="nav_report">Laporan</string>
+    <string name="nav_budget">Budget</string>
+    <string name="nav_add">Tambah transaksi</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Lewati</string>
+    <string name="onboarding_start">Mulai</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Halo, %s!</string>
+    <string name="home_total_balance">TOTAL SALDO</string>
+    <string name="home_monthly_income">Masuk bulan ini</string>
+    <string name="home_monthly_expense">Keluar bulan ini</string>
+    <string name="home_tips_title">Tips hari ini</string>
+    <string name="home_recent_transactions">Transaksi terbaru</string>
+    <string name="home_see_all">Lihat semua</string>
+
+    <!-- Add Transaction -->
+    <string name="add_title">Tambah transaksi</string>
+    <string name="edit_title">Edit transaksi</string>
+    <string name="add_voice_title">Tambah via suara</string>
+    <string name="input_manual">Manual</string>
+    <string name="input_voice">Suara</string>
+    <string name="type_expense">Pengeluaran</string>
+    <string name="type_income">Pemasukan</string>
+    <string name="category_label">Kategori</string>
+    <string name="note_label">Catatan</string>
+    <string name="note_placeholder">Contoh: Makan siang</string>
+    <string name="amount_label">Nominal</string>
+    <string name="save_button">Simpan transaksi</string>
+    <string name="save_changes">Simpan perubahan</string>
+    <string name="date_label">Tanggal</string>
+    <string name="voice_placeholder">Fitur suara akan segera hadir!</string>
+    <string name="confirm_save">Konfirmasi &amp; simpan</string>
+    <string name="edit_manual">Tidak akurat? Edit manual</string>
+    <string name="saved">Tersimpan!</string>
+
+    <!-- History -->
+    <string name="history_title">Riwayat</string>
+    <string name="history_filter">Filter</string>
+    <string name="history_source_label">Sumber input</string>
+    <string name="history_category_label">Kategori</string>
+    <string name="history_all_source">Semua</string>
+    <string name="history_all_category">Semua kategori</string>
+    <string name="history_empty">Tidak ada transaksi yang cocok dengan filter ini</string>
+    <string name="history_empty_all">Belum ada transaksi tercatat</string>
+
+    <!-- Report -->
+    <string name="report_title">Laporan</string>
+    <string name="report_daily">Harian</string>
+    <string name="report_weekly">Mingguan</string>
+    <string name="report_monthly">Bulanan</string>
+    <string name="report_total_out">Total keluar</string>
+    <string name="report_empty">Belum cukup data untuk laporan periode ini</string>
+
+    <!-- Budget -->
+    <string name="budget_title">Budget</string>
+    <string name="budget_add">+ Tambah budget baru</string>
+    <string name="budget_add_dialog">Tambah Budget Baru</string>
+    <string name="budget_edit_dialog">Edit Budget</string>
+    <string name="budget_limit_label">Batas budget</string>
+    <string name="budget_save">Simpan</string>
+    <string name="budget_empty">Belum ada budget. Tambah budget baru untuk mulai mengatur pengeluaran!</string>
+    <string name="budget_safe">Aman</string>
+    <string name="budget_warning">Hampir habis</string>
+    <string name="budget_over">Melebihi limit</string>
+    <string name="budget_percent_used">%1$d%% terpakai</string>
+    <string name="budget_over_amount">+Rp %1$s melebihi limit</string>
+
+    <!-- Tips -->
+    <string name="tip_no_transactions">Belum ada transaksi di bulan %s. Mulai catat pengeluaran pertama kamu!</string>
+    <string name="tip_overspend">Pengeluaranmu %d%% lebih besar dari pemasukan bulan ini. Coba kurangi belanja yang tidak perlu!</string>
+    <string name="tip_good_savings">Kebiasaan menabung yang baik! %d%% pendapatanmu berhasil disisihkan bulan ini.</string>
+    <string name="tip_near_limit">Pengeluaranmu sudah mencapai %d%% dari pemasukan. Perhatikan sisa bulan %s!</string>
+    <string name="tip_top_category">Pengeluaran terbesar bulan ini di kategori %s (%d%%). Coba evaluasi kembali!</string>
+    <string name="tip_early_month">Awal bulan, saatnya buat anggaran bulan %s!</string>
+    <string name="tip_mid_month">Coba alokasikan 20% pendapatanmu untuk tabungan darurat sebelum belanja.</string>
+    <string name="tip_late_month">Akhir bulan, periksa kembali pengeluaran sebelum bulan baru tiba!</string>
+
+    <!-- General -->
+    <string name="filter">Filter</string>
+    <string name="cancel">Batal</string>
+    <string name="select">Pilih</string>
+    <string name="delete">Hapus</string>
+    <string name="unknown">Unknown</string>
+    <string name="rupiah">Rp</string>
 </resources>
