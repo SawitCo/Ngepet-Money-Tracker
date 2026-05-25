@@ -6,7 +6,6 @@ import com.example.ngepet.presentation.ui.theme.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,9 +37,18 @@ import com.example.ngepet.presentation.ui.theme.Ink
 import com.example.ngepet.presentation.ui.theme.Muted
 import com.example.ngepet.presentation.ui.theme.Pink400
 import com.example.ngepet.presentation.ui.theme.Warning
+import com.example.ngepet.domain.model.CategoryBreakdown
+
+val chartColors = listOf(
+    Green600, Pink400, Warning, Color(0xFF185FA5),
+    Color(0xFFB4B2A9), Color(0xFF7B61FF), Color(0xFF56C596), Color(0xFFFF8A65)
+)
 
 @Composable
-fun ReportScreen() {
+fun ReportScreen(
+    totalExpense: Long,
+    breakdown: List<CategoryBreakdown>
+) {
     ScreenColumn {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -60,12 +67,17 @@ fun ReportScreen() {
         Spacer(Modifier.height(10.dp))
         FilterChips(listOf("Semua" to true, "Suara" to true, "Manual" to false))
         Spacer(Modifier.height(18.dp))
-        DonutChart()
+        DonutChart(totalExpense = totalExpense, breakdown = breakdown)
         Spacer(Modifier.height(18.dp))
-        ReportLegend("Makanan", "43%", "Rp 499.000", Green600)
-        ReportLegend("Belanja", "18%", "Rp 209.000", Pink400)
-        ReportLegend("Transport", "14%", "Rp 162.000", Warning)
-        ReportLegend("Lainnya", "25%", "Rp 290.000", Color(0xFFB4B2A9))
+        breakdown.forEachIndexed { index, item ->
+            val color = chartColors[index % chartColors.size]
+            ReportLegend(
+                name = item.categoryName,
+                percent = "${(item.percentage * 100).toInt()}%",
+                amount = "Rp ${formatAmount(item.amount.toLong())}",
+                color = color
+            )
+        }
     }
 }
 
@@ -84,21 +96,35 @@ fun PeriodChip(label: String, selected: Boolean) {
 }
 
 @Composable
-fun DonutChart() {
+fun DonutChart(totalExpense: Long, breakdown: List<CategoryBreakdown>) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(150.dp)) {
             val stroke = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round)
             val chartSize = Size(size.width - 28.dp.toPx(), size.height - 28.dp.toPx())
             val topLeft = Offset(14.dp.toPx(), 14.dp.toPx())
-            drawArc(Green50, -90f, 360f, false, topLeft, chartSize, style = stroke)
-            drawArc(Green600, -90f, 155f, false, topLeft, chartSize, style = stroke)
-            drawArc(Pink400, 70f, 65f, false, topLeft, chartSize, style = stroke)
-            drawArc(Warning, 140f, 50f, false, topLeft, chartSize, style = stroke)
-            drawArc(Color(0xFFB4B2A9), 195f, 90f, false, topLeft, chartSize, style = stroke)
+
+            if (breakdown.isEmpty()) {
+                drawArc(Green50, -90f, 360f, false, topLeft, chartSize, style = stroke)
+            } else {
+                var startAngle = -90f
+                breakdown.forEachIndexed { index, item ->
+                    val sweep = (item.percentage * 360).toFloat()
+                    drawArc(
+                        chartColors[index % chartColors.size],
+                        startAngle, sweep, false, topLeft, chartSize, style = stroke
+                    )
+                    startAngle += sweep
+                }
+            }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Total keluar", color = Muted, fontSize = 10.sp)
-            Text("Rp 1,16jt", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            val displayAmount = if (totalExpense >= 1_000_000) {
+                "Rp ${totalExpense / 1_000_000},${(totalExpense % 1_000_000) / 100_000}jt"
+            } else {
+                "Rp ${formatAmount(totalExpense)}"
+            }
+            Text(displayAmount, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

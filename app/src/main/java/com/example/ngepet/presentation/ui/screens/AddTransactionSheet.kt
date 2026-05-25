@@ -56,14 +56,21 @@ import com.example.ngepet.presentation.ui.theme.Ink
 import com.example.ngepet.presentation.ui.theme.Muted
 import com.example.ngepet.presentation.ui.theme.Pink400
 import com.example.ngepet.presentation.ui.theme.Pink800
+import com.example.ngepet.presentation.VoiceResult
 
 @Composable
 fun AddTransactionSheet(
     mode: InputSheetMode,
     categories: List<CategoryUi>,
+    voiceResult: VoiceResult?,
+    isListening: Boolean,
+    voiceError: String?,
     onModeChange: (InputSheetMode) -> Unit,
     onClose: () -> Unit,
-    onSave: (Long, Long, String, Boolean) -> Unit
+    onSave: (Long, Long, String, Boolean) -> Unit,
+    onStartVoice: () -> Unit,
+    onStopVoice: () -> Unit,
+    onClearVoice: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -92,7 +99,16 @@ fun AddTransactionSheet(
         if (mode == InputSheetMode.Manual) {
             ManualInputContent(categories, onSave)
         } else {
-            VoiceInputContent()
+            VoiceInputContent(
+                voiceResult = voiceResult,
+                isListening = isListening,
+                voiceError = voiceError,
+                onStartVoice = onStartVoice,
+                onStopVoice = onStopVoice,
+                onClearVoice = onClearVoice,
+                categories = categories,
+                onSave = onSave
+            )
         }
     }
 }
@@ -210,43 +226,83 @@ fun CategoryGrid(categories: List<CategoryUi>, selectedCategory: String, onCateg
 }
 
 @Composable
-fun VoiceInputContent() {
+fun VoiceInputContent(
+    voiceResult: VoiceResult?,
+    isListening: Boolean,
+    voiceError: String?,
+    onStartVoice: () -> Unit,
+    onStopVoice: () -> Unit,
+    onClearVoice: () -> Unit,
+    categories: List<CategoryUi>,
+    onSave: (Long, Long, String, Boolean) -> Unit
+) {
+    var confirmed by remember { mutableStateOf(false) }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape)
-                .background(Green50)
-                .border(2.dp, Green100, CircleShape),
+                .background(if (isListening) Pink50 else Green50)
+                .border(2.dp, if (isListening) Pink400 else Green100, CircleShape)
+                .clickable {
+                    if (isListening) {
+                        onStopVoice()
+                    } else {
+                        onClearVoice()
+                        onStartVoice()
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
-            SymbolBox(Icons.Filled.Mic, Color.White, Green600, 54.dp)
+            SymbolBox(Icons.Filled.Mic, if (isListening) Pink400 else Color.White, if (isListening) Pink400 else Green600, 54.dp)
         }
         Spacer(Modifier.height(10.dp))
-        WaveBars()
-        Spacer(Modifier.height(10.dp))
-        Text("Coba bilang:", color = Muted, fontSize = 11.sp)
-        Text("\"Beli makan siang dua puluh ribu\"", color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        if (isListening) {
+            WaveBars()
+            Spacer(Modifier.height(10.dp))
+            Text("Mendengarkan...", color = Pink800, fontSize = 11.sp)
+        } else if (voiceError != null) {
+            Spacer(Modifier.height(10.dp))
+            Text(voiceError, color = Danger, fontSize = 11.sp)
+        } else {
+            Spacer(Modifier.height(10.dp))
+            Text("Coba bilang:", color = Muted, fontSize = 11.sp)
+            Text("\"Beli makan siang dua puluh ribu\"", color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
         Spacer(Modifier.height(12.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Green50)
-                .padding(12.dp)
-        ) {
-            Text("HASIL DETEKSI", color = Green600, fontSize = 10.sp)
-            ResultRow("Nominal", "Rp 25.000")
-            ResultRow("Kategori", "Makanan")
-            ResultRow("Tipe", "Pengeluaran")
+        if (voiceResult != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Green50)
+                    .padding(12.dp)
+            ) {
+                Text("HASIL DETEKSI", color = Green600, fontSize = 10.sp)
+                ResultRow("Teks", voiceResult.rawText)
+                ResultRow("Nominal", "Rp ${formatAmount(voiceResult.amount)}")
+                ResultRow("Kategori", voiceResult.categoryName)
+                ResultRow("Tipe", if (voiceResult.isExpense) "Pengeluaran" else "Pemasukan")
+            }
+            Button(
+                onClick = {
+                    if (!confirmed) {
+                        confirmed = true
+                        val cat = categories.find { it.name == voiceResult.categoryName }
+                        val catId = cat?.id?.toLongOrNull() ?: 0L
+                        onSave(voiceResult.amount, catId, voiceResult.rawText, voiceResult.isExpense)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Green600),
+                shape = RoundedCornerShape(13.dp),
+                enabled = !confirmed
+            ) { Text(if (confirmed) "Tersimpan!" else "Konfirmasi & simpan") }
+            Text("Tidak akurat? Edit manual", color = Pink800, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp).clickable {
+                onClearVoice()
+            })
         }
-        Button(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Green600),
-            shape = RoundedCornerShape(13.dp)
-        ) { Text("Konfirmasi & simpan") }
-        Text("Tidak akurat? Edit manual", color = Pink800, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
 

@@ -80,7 +80,7 @@ fun OnboardingScreen(initialName: String, initialBalance: Long, onComplete: (Str
         }
 
         AnimatedContent(targetState = currentPage, transitionSpec = {
-            fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+            fadeIn(tween(150)) togetherWith fadeOut(tween(150))
         }) { pageIndex ->
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -150,7 +150,7 @@ fun OnboardingScreen(initialName: String, initialBalance: Long, onComplete: (Str
                 onboardingPages.forEachIndexed { index, _ ->
                     val dotWidth by animateDpAsState(
                         targetValue = if (index == currentPage) 22.dp else 7.dp,
-                        animationSpec = tween(300)
+                        animationSpec = tween(150)
                     )
                     Box(
                         modifier = Modifier

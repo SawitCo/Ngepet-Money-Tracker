@@ -24,7 +24,7 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun deleteTransaction(id: String) {
-        // Not yet implemented at DAO level
+        id.toLongOrNull()?.let { transactionDao.deleteTransactionById(it) }
     }
 }
 

@@ -27,9 +27,10 @@ data class BudgetUi(
     val limit: String,
     val progress: Float,
     val status: String,
-    val icon: ImageVector,
-    val color: Color,
-    val bg: Color
+    val iconName: String = "MoreHoriz",
+    val spentAmount: Long = 0,
+    val limitAmount: Long = 0,
+    val overAmount: Long = 0
 )
 
 data class OnboardingPageUi(

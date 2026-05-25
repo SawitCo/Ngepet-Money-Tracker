@@ -153,7 +153,7 @@ fun TransactionRow(item: TransactionUi) {
                 SourceBadge(item.source)
             }
         }
-        Text("Rp ${item.amount}", color = if (!item.isExpense) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("Rp ${formatRupiah(item.amount.toString())}", color = if (!item.isExpense) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

@@ -30,6 +30,7 @@ import com.example.ngepet.presentation.ui.screens.ReportScreen
 import com.example.ngepet.presentation.ui.theme.NgepetTheme
 import com.example.ngepet.presentation.ui.theme.SurfaceWarm
 import java.util.Date
+import com.example.ngepet.domain.model.CategoryBreakdown
 
 @Composable
 fun NgepetApp(viewModel: MainViewModel = viewModel()) {
@@ -39,6 +40,14 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
     val categoriesEntity by viewModel.categories.collectAsState()
     val initialBalance by viewModel.initialBalance.collectAsState()
     val currentBalance by viewModel.currentBalance.collectAsState()
+    val monthlyIncome by viewModel.monthlyIncome.collectAsState()
+    val monthlyExpense by viewModel.monthlyExpense.collectAsState()
+    val reportBreakdown by viewModel.reportBreakdown.collectAsState()
+    val budgetList by viewModel.budgetList.collectAsState()
+    val currentTip by viewModel.currentTip.collectAsState()
+    val voiceResult by viewModel.voiceResult.collectAsState()
+    val isListening by viewModel.isListening.collectAsState()
+    val voiceError by viewModel.voiceError.collectAsState()
 
     val categories = categoriesEntity.map {
         CategoryUi(id = it.id.toString(), name = it.name, iconName = it.iconName)
@@ -61,9 +70,20 @@ fun NgepetApp(viewModel: MainViewModel = viewModel()) {
         transactions = transactions,
         categories = categories,
         currentBalance = currentBalance,
+        monthlyIncome = monthlyIncome,
+        monthlyExpense = monthlyExpense,
+        reportBreakdown = reportBreakdown,
+        budgetList = budgetList,
+        currentTip = currentTip,
+        voiceResult = voiceResult,
+        isListening = isListening,
+        voiceError = voiceError,
         onAddTransaction = { amount, categoryId, note, isExpense ->
             viewModel.addTransaction(amount, categoryId, note, Date().time, isExpense)
-        }
+        },
+        onStartVoice = { viewModel.startVoiceRecognition() },
+        onStopVoice = { viewModel.stopVoiceRecognition() },
+        onClearVoice = { viewModel.clearVoiceResult() }
     )
 }
 
@@ -74,7 +94,18 @@ private fun MainAppContent(
     transactions: List<com.example.ngepet.presentation.ui.model.TransactionUi>,
     categories: List<CategoryUi>,
     currentBalance: Long,
-    onAddTransaction: (Long, Long, String, Boolean) -> Unit
+    monthlyIncome: Long,
+    monthlyExpense: Long,
+    reportBreakdown: List<com.example.ngepet.domain.model.CategoryBreakdown>,
+    budgetList: List<com.example.ngepet.presentation.ui.model.BudgetUi>,
+    currentTip: String,
+    voiceResult: com.example.ngepet.presentation.VoiceResult?,
+    isListening: Boolean,
+    voiceError: String?,
+    onAddTransaction: (Long, Long, String, Boolean) -> Unit,
+    onStartVoice: () -> Unit,
+    onStopVoice: () -> Unit,
+    onClearVoice: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(NgepetTab.Home) }
     var sheetMode by remember { mutableStateOf<InputSheetMode?>(null) }
@@ -97,16 +128,22 @@ private fun MainAppContent(
                     .padding(innerPadding),
                 color = SurfaceWarm
             ) {
-                Crossfade(targetState = selectedTab, animationSpec = tween(300)) { tab ->
+                Crossfade(targetState = selectedTab, animationSpec = tween(150)) { tab ->
                     when (tab) {
                         NgepetTab.Home -> HomeScreen(
                             userName = userName,
                             transactions = transactions.take(5),
-                            currentBalance = currentBalance
+                            currentBalance = currentBalance,
+                            monthlyIncome = monthlyIncome,
+                            monthlyExpense = monthlyExpense,
+                            currentTip = currentTip
                         )
                         NgepetTab.History -> HistoryScreen(transactions = transactions)
-                        NgepetTab.Report -> ReportScreen()
-                        NgepetTab.Budget -> BudgetScreen()
+                        NgepetTab.Report -> ReportScreen(
+                            totalExpense = monthlyExpense,
+                            breakdown = reportBreakdown
+                        )
+                        NgepetTab.Budget -> BudgetScreen(budgets = budgetList)
                     }
                 }
             }
@@ -114,18 +151,28 @@ private fun MainAppContent(
 
         sheetMode?.let { mode ->
             ModalBottomSheet(
-                onDismissRequest = { sheetMode = null },
+                onDismissRequest = {
+                    sheetMode = null
+                    onStopVoice()
+                    onClearVoice()
+                },
                 sheetState = sheetState
             ) {
                 AddTransactionSheet(
                     mode = mode,
                     categories = categories,
+                    voiceResult = voiceResult,
+                    isListening = isListening,
+                    voiceError = voiceError,
                     onModeChange = { sheetMode = it },
                     onClose = { sheetMode = null },
                     onSave = { amount, categoryId, note, isExpense ->
                         onAddTransaction(amount, categoryId, note, isExpense)
                         sheetMode = null
-                    }
+                    },
+                    onStartVoice = onStartVoice,
+                    onStopVoice = onStopVoice,
+                    onClearVoice = onClearVoice
                 )
             }
         }
