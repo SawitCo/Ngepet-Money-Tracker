@@ -172,6 +172,34 @@ class MainViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val dailyTips = listOf(
+        "Coba alokasikan 20% pendapatanmu untuk tabungan darurat sebelum belanja.",
+        "Catat setiap pengeluaran kecil — kopi, parkir, jajan — mereka bisa bikin boros tanpa sadar.",
+        "Aturan 50/30/20: 50% kebutuhan, 30% keinginan, 20% tabungan. Coba terapkan bulan ini!",
+        "Prioritaskan kebutuhan daripada keinginan.",
+        "Menabung jadi lebih mudah kalau dipotong langsung dari pemasukan di awal bulan.",
+        "Kurangi jajan di luar — masak di rumah bisa hemat sampai 40% pengeluaran makan.",
+        "Coba pantau pengeluaran transportasi kamu — mungkin ada rute yang lebih hemat.",
+        "Belanja bulanan dengan daftar belanja bisa cegah impulsive buying.",
+        "Bayar tagihan lebih awal biar tidak kena denda dan lebih tenang.",
+        "Kesehatan adalah investasi. Sisihkan dana untuk olahraga atau cek kesehatan rutin.",
+        "Evaluasi langganan bulanan — mungkin ada yang jarang dipakai tapi tetap bayar.",
+        "Sisihkan THR atau bonus sebagai tabungan, bukan untuk belanja impulsif.",
+        "Hiburan itu penting, tapi tetapkan batas anggaran hiburan bulanan.",
+        "Utang konsumtif adalah musuh tabungan. Prioritaskan lunasi cicilan.",
+        "Liburan bisa hemat dengan rencana: booking awal, cari promo, dan pisahkan budget liburan.",
+        "Review pengeluaran mingguan setiap hari Minggu untuk evaluasi.",
+        "Gunakan cash atau debit — kartu kredit bikin pengeluaran terasa lebih abstrak.",
+        "Awal bulan, saatnya buat anggaran bulan ini!",
+        "Akhir bulan, periksa kembali pengeluaran sebelum bulan baru tiba!",
+        "Kebiasaan finansial baik dimulai dari langkah kecil yang konsisten."
+    )
+
+    private fun getDefaultTip(cal: Calendar): String {
+        val index = cal.get(Calendar.DAY_OF_YEAR) % dailyTips.size
+        return dailyTips[index]
+    }
+
     val currentTip: StateFlow<String> = combine(
         monthlyIncome, monthlyExpense, reportBreakdown, transactions
     ) { income, expense, breakdown, txs ->
@@ -238,34 +266,6 @@ class MainViewModel @Inject constructor(
         }
 
         return getDefaultTip(now)
-    }
-
-    private val dailyTips = listOf(
-        "Coba alokasikan 20% pendapatanmu untuk tabungan darurat sebelum belanja.",
-        "Catat setiap pengeluaran kecil — kopi, parkir, jajan — mereka bisa bikin boros tanpa sadar.",
-        "Aturan 50/30/20: 50% kebutuhan, 30% keinginan, 20% tabungan. Coba terapkan bulan ini!",
-        "Prioritaskan kebutuhan daripada keinginan.",
-        "Menabung jadi lebih mudah kalau dipotong langsung dari pemasukan di awal bulan.",
-        "Kurangi jajan di luar — masak di rumah bisa hemat sampai 40% pengeluaran makan.",
-        "Coba pantau pengeluaran transportasi kamu — mungkin ada rute yang lebih hemat.",
-        "Belanja bulanan dengan daftar belanja bisa cegah impulsive buying.",
-        "Bayar tagihan lebih awal biar tidak kena denda dan lebih tenang.",
-        "Kesehatan adalah investasi. Sisihkan dana untuk olahraga atau cek kesehatan rutin.",
-        "Evaluasi langganan bulanan — mungkin ada yang jarang dipakai tapi tetap bayar.",
-        "Sisihkan THR atau bonus sebagai tabungan, bukan untuk belanja impulsif.",
-        "Hiburan itu penting, tapi tetapkan batas anggaran hiburan bulanan.",
-        "Utang konsumtif adalah musuh tabungan. Prioritaskan lunasi cicilan.",
-        "Liburan bisa hemat dengan rencana: booking awal, cari promo, dan pisahkan budget liburan.",
-        "Review pengeluaran mingguan setiap hari Minggu untuk evaluasi.",
-        "Gunakan cash atau debit — kartu kredit bikin pengeluaran terasa lebih abstrak.",
-        "Awal bulan, saatnya buat anggaran bulan ini!",
-        "Akhir bulan, periksa kembali pengeluaran sebelum bulan baru tiba!",
-        "Kebiasaan finansial baik dimulai dari langkah kecil yang konsisten."
-    )
-
-    private fun getDefaultTip(cal: Calendar): String {
-        val index = cal.get(Calendar.DAY_OF_YEAR) % dailyTips.size
-        return dailyTips[index]
     }
 
     private fun formatAmount(amount: Long): String {

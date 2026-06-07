@@ -3,6 +3,11 @@ package com.example.ngepet.presentation.ui.screens
 import com.example.ngepet.presentation.ui.*
 import com.example.ngepet.presentation.ui.model.*
 import com.example.ngepet.presentation.ui.theme.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -74,10 +80,9 @@ fun AddTransactionSheet(
     onSave: (Long, Long, String, Long, Boolean) -> Unit,
     onUpdate: ((String, Long, Long, String, Long, Boolean) -> Unit)? = null
 ) {
-    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier.fillMaxWidth().imePadding().navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp).verticalScroll(scrollState)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -91,10 +96,16 @@ fun AddTransactionSheet(
             InputModeChip("Suara", Icons.Filled.Mic, mode == InputSheetMode.Voice, Modifier.weight(1f)) { onModeChange(InputSheetMode.Voice) }
         }
         Spacer(Modifier.height(12.dp))
-        if (mode == InputSheetMode.Manual) {
-            ManualInputContent(categories = categories, editTxn = editTxn, onSave = onSave, onUpdate = onUpdate)
-        } else {
-            PlaceholderVoiceContent()
+        AnimatedContent(targetState = mode, transitionSpec = {
+            val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+            slideInHorizontally(tween(200)) { dir * it } togetherWith
+                slideOutHorizontally(tween(200)) { -dir * it }
+        }, label = "ModeSwitch") { currentMode ->
+            if (currentMode == InputSheetMode.Manual) {
+                ManualInputContent(categories = categories, editTxn = editTxn, onSave = onSave, onUpdate = onUpdate)
+            } else {
+                PlaceholderVoiceContent()
+            }
         }
     }
 }
@@ -108,6 +119,7 @@ fun ManualInputContent(
     onUpdate: ((String, Long, Long, String, Long, Boolean) -> Unit)?
 ) {
     val isEditing = editTxn != null
+    val scrollState = rememberScrollState()
     var amountRaw by remember { mutableStateOf(if (isEditing) editTxn!!.amount.toString() else "") }
     var note by remember { mutableStateOf(editTxn?.note ?: "") }
     var selectedType by remember { mutableStateOf(if (isEditing && !editTxn!!.isExpense) "Pemasukan" else "Pengeluaran") }
@@ -116,6 +128,8 @@ fun ManualInputContent(
     val months = arrayOf("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember")
     var selectedDateMillis by remember { mutableStateOf(initialCal.timeInMillis) }
     var showDatePicker by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(scrollState)) {
 
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardSoft).padding(3.dp)) {
         Box(Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
@@ -172,6 +186,7 @@ fun ManualInputContent(
         shape = RoundedCornerShape(13.dp),
         enabled = amountRaw.isNotBlank() && selectedCategory.isNotBlank()
     ) { Text(if (isEditing) "Simpan perubahan" else "Simpan transaksi") }
+    }
 }
 
 @Composable

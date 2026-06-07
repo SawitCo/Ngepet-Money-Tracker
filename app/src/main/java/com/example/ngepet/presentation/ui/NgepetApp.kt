@@ -1,5 +1,8 @@
 package com.example.ngepet.presentation.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -163,7 +166,19 @@ private fun MainAppContent(
             NavHost(
                 navController = navController,
                 startDestination = NavRoute.Home.route,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = { slideInHorizontally(tween(200)) { fullWidth ->
+                    val from = routeOrder[initialState.destination.route] ?: 0
+                    val to = routeOrder[targetState.destination.route] ?: 0
+                    if (to > from) fullWidth else -fullWidth
+                } },
+                exitTransition = { slideOutHorizontally(tween(200)) { fullWidth ->
+                    val from = routeOrder[initialState.destination.route] ?: 0
+                    val to = routeOrder[targetState.destination.route] ?: 0
+                    if (to > from) -fullWidth else fullWidth
+                } },
+                popEnterTransition = { slideInHorizontally(tween(200)) { -it } },
+                popExitTransition = { slideOutHorizontally(tween(200)) { it } }
             ) {
                 composable(NavRoute.Home.route) {
                     HomeScreen(
@@ -222,6 +237,8 @@ private fun MainAppContent(
         }
     }
 }
+
+private val routeOrder = mapOf("home" to 0, "history" to 1, "report" to 2, "budget" to 3)
 
 private fun navRouteForTab(tab: NgepetTab): String = when (tab) {
     NgepetTab.Home -> NavRoute.Home.route
