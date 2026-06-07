@@ -3,7 +3,6 @@ package com.example.ngepet.data.local.dao
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.ngepet.data.local.NgepetDatabase
 import com.example.ngepet.data.local.entity.BudgetEntity
 import kotlinx.coroutines.flow.first
@@ -13,12 +12,15 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE)
 class BudgetDaoTest {
 
     private lateinit var db: NgepetDatabase
-    private lateinit var dao: com.example.ngepet.data.local.dao.BudgetDao
+    private lateinit var dao: BudgetDao
 
     @Before
     fun setup() {

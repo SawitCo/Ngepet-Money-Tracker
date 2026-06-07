@@ -69,6 +69,8 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -84,6 +86,5 @@ tasks.withType<Test> {
         showExceptions = true
         showCauses = true
         showStackTraces = true
-        exceptionFormat = "full"
     }
 }
