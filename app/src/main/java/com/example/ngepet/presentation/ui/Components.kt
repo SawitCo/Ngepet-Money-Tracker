@@ -40,6 +40,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -90,7 +92,11 @@ fun SectionHeader(title: String, action: String) {
 }
 
 @Composable
-fun EmptyState(message: String) {
+fun EmptyState(
+    message: String,
+    icon: ImageVector = Icons.Filled.Receipt,
+    action: (@Composable () -> Unit)? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,13 +104,17 @@ fun EmptyState(message: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        SymbolBox(Icons.Filled.Receipt, Green600, Green50, 46.dp)
+        SymbolBox(icon, Green600, Green50, 56.dp)
         Text(message, color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center)
+        if (action != null) {
+            Spacer(Modifier.height(4.dp))
+            action()
+        }
     }
 }
 
 @Composable
-fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp) {
+fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp, contentDescription: String? = null) {
     Box(
         modifier = Modifier
             .size(size)
@@ -114,7 +124,7 @@ fun SymbolBox(icon: ImageVector, color: Color, bg: Color, size: Dp) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = color,
             modifier = Modifier.size(size * 0.52f)
         )
@@ -219,13 +229,14 @@ fun BottomNavigationBar(
 fun NavItem(tab: NgepetTab, selected: Boolean, onTabSelected: (NgepetTab) -> Unit) {
     val label = androidx.compose.ui.res.stringResource(tab.labelRes)
     Column(
-        modifier = Modifier.clickable { onTabSelected(tab) }.width(58.dp),
+        modifier = Modifier.clickable { onTabSelected(tab) }.width(58.dp)
+            .semantics { contentDescription = "Navigasi ke $label" },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         Icon(
             imageVector = tab.icon,
-            contentDescription = label,
+            contentDescription = null,
             tint = if (selected) Green600 else Muted,
             modifier = Modifier.size(21.dp)
         )

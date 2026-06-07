@@ -3,6 +3,8 @@ package com.example.ngepet.presentation.ui.screens
 import com.example.ngepet.presentation.ui.*
 import com.example.ngepet.presentation.ui.model.*
 import com.example.ngepet.presentation.ui.theme.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,7 +79,7 @@ fun BudgetScreen(
         }
         Spacer(Modifier.height(12.dp))
         if (budgets.isEmpty()) {
-            EmptyState("Belum ada budget. Tambah budget baru untuk mulai mengatur pengeluaran!")
+            EmptyState("Belum ada budget. Tambah budget baru untuk mulai mengatur pengeluaran!", icon = Icons.Filled.TrackChanges)
             Spacer(Modifier.weight(1f))
             AddBudgetButton { showAddDialog = true }
         } else {
@@ -132,7 +136,7 @@ fun BudgetCard(item: BudgetUi, onEdit: () -> Unit, onDelete: () -> Unit) {
                 SymbolBox(icon, categoryColor(item.iconName), categoryBgColor(item.iconName), 32.dp)
                 Column { Text(item.category, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium); Text(item.period, color = Muted, fontSize = 10.sp) }
             }
-            Text("x", color = Muted, fontSize = 14.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onDelete() }.padding(4.dp))
+            Text("x", color = Muted, fontSize = 14.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onDelete() }.padding(4.dp).semantics { contentDescription = "Hapus budget" })
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -165,7 +169,7 @@ fun BudgetDialog(title: String, categories: List<CategoryUi>, initialCategoryId:
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(20.dp).verticalScroll(rememberScrollState())) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("x", color = Muted, modifier = Modifier.clickable { onDismiss() })
+                Text("x", color = Muted, modifier = Modifier.clickable { onDismiss() }.semantics { contentDescription = "Tutup" })
             }
             Spacer(Modifier.height(14.dp))
             Text("Kategori", color = Muted, fontSize = 11.sp)

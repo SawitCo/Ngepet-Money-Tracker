@@ -45,6 +45,7 @@ private fun TransactionEntity.toDomain(): Transaction = Transaction(
 )
 
 private fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
+    id = id.toLongOrNull() ?: 0L,
     amount = amount.toLong(),
     categoryId = categoryId.toLongOrNull() ?: 0L,
     note = note ?: "",

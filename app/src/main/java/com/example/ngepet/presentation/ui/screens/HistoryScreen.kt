@@ -30,6 +30,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Search
 import com.example.ngepet.presentation.ui.model.TransactionUi
 import com.example.ngepet.presentation.ui.theme.CardSoft
 import com.example.ngepet.presentation.ui.theme.Green50
@@ -72,7 +75,12 @@ fun HistoryScreen(
         Spacer(Modifier.height(10.dp))
         LazyColumn {
             if (filteredTransactions.isEmpty()) {
-                item { EmptyState("Tidak ada transaksi yang cocok dengan filter ini") }
+                item {
+                    EmptyState(
+                        message = if (transactions.isEmpty()) "Belum ada transaksi tercatat" else "Tidak ada transaksi yang cocok dengan filter ini",
+                        icon = if (transactions.isEmpty()) Icons.AutoMirrored.Filled.List else Icons.Filled.Search
+                    )
+                }
             } else {
                 item { DateSeparator("Riwayat transaksi") }
                 items(filteredTransactions, key = { it.id }) { txn ->

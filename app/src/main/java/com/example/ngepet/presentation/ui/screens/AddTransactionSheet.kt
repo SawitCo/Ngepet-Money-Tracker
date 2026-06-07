@@ -1,9 +1,19 @@
 package com.example.ngepet.presentation.ui.screens
 
-import com.example.ngepet.presentation.ui.*
-import com.example.ngepet.presentation.ui.model.*
-import com.example.ngepet.presentation.ui.theme.*
+import android.Manifest
+import android.content.Intent
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -43,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,12 +61,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ngepet.data.source.SpeechToTransactionAdapter
+import com.example.ngepet.domain.model.TransactionInputModel
+import com.example.ngepet.presentation.ui.*
 import com.example.ngepet.presentation.ui.model.CategoryUi
 import com.example.ngepet.presentation.ui.model.TransactionUi
 import com.example.ngepet.presentation.ui.theme.CardSoft
@@ -67,6 +85,7 @@ import com.example.ngepet.presentation.ui.theme.Green800
 import com.example.ngepet.presentation.ui.theme.Ink
 import com.example.ngepet.presentation.ui.theme.Muted
 import com.example.ngepet.presentation.ui.theme.Pink400
+import com.example.ngepet.presentation.ui.theme.Pink50
 import com.example.ngepet.presentation.ui.theme.Pink800
 import java.util.Calendar
 
@@ -80,6 +99,10 @@ fun AddTransactionSheet(
     onSave: (Long, Long, String, Long, Boolean) -> Unit,
     onUpdate: ((String, Long, Long, String, Long, Boolean) -> Unit)? = null
 ) {
+    val catMap = remember(categories) {
+        categories.associateBy { it.name }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth().imePadding().navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 10.dp)
@@ -88,7 +111,7 @@ fun AddTransactionSheet(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             val title = if (editTxn != null) "Edit transaksi" else if (mode == InputSheetMode.Manual) "Tambah transaksi" else "Tambah via suara"
             Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Text("x", modifier = Modifier.clickable { onClose() }, color = Muted)
+            Text("x", modifier = Modifier.clickable { onClose() }.semantics { contentDescription = "Tutup" }, color = Muted)
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -104,7 +127,14 @@ fun AddTransactionSheet(
             if (currentMode == InputSheetMode.Manual) {
                 ManualInputContent(categories = categories, editTxn = editTxn, onSave = onSave, onUpdate = onUpdate)
             } else {
-                PlaceholderVoiceContent()
+                VoiceInputContent(
+                    categories = categories,
+                    catMap = catMap,
+                    onConfirm = { amount, catId, note, dateMillis, isExpense ->
+                        onSave(amount, catId, note, dateMillis, isExpense)
+                    },
+                    onSwitchToManual = { onModeChange(InputSheetMode.Manual) }
+                )
             }
         }
     }
@@ -205,13 +235,202 @@ fun CategoryGrid(categories: List<CategoryUi>, selectedCategory: String, onCateg
 }
 
 @Composable
-fun PlaceholderVoiceContent() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Box(Modifier.size(80.dp).clip(CircleShape).background(Green50).border(2.dp, Green100, CircleShape), contentAlignment = Alignment.Center) {
-            SymbolBox(Icons.Filled.Mic, Color.White, Green600, 54.dp)
+fun VoiceInputContent(
+    categories: List<CategoryUi>,
+    catMap: Map<String, CategoryUi>,
+    onConfirm: (Long, Long, String, Long, Boolean) -> Unit,
+    onSwitchToManual: (TransactionInputModel) -> Unit
+) {
+    val context = LocalContext.current
+    val adapter = remember { SpeechToTransactionAdapter() }
+
+    var isListening by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<TransactionInputModel?>(null) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+
+    val permLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val sr = SpeechRecognizer.createSpeechRecognizer(context)
+            recognizer = sr
+            sr.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) { isListening = true }
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() { isListening = false }
+                override fun onError(error: Int) {
+                    isListening = false
+                    errorMsg = when (error) {
+                        SpeechRecognizer.ERROR_NETWORK -> "Cek koneksi internet"
+                        SpeechRecognizer.ERROR_AUDIO -> "Gagal mengakses mikrofon"
+                        SpeechRecognizer.ERROR_NO_MATCH -> "Tidak terdeteksi, coba lagi"
+                        else -> "Gagal mendeteksi suara"
+                    }
+                    recognizer?.destroy()
+                    recognizer = null
+                }
+                override fun onResults(results: Bundle?) {
+                    isListening = false
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        result = adapter.adapt(matches[0])
+                    }
+                    recognizer?.destroy()
+                    recognizer = null
+                }
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "id-ID")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            }
+            sr.startListening(intent)
+        } else {
+            errorMsg = "Izin mikrofon diperlukan"
         }
-        Spacer(Modifier.height(10.dp))
-        Text("Fitur suara akan segera hadir!", color = Muted, fontSize = 12.sp)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { recognizer?.destroy() }
+    }
+
+    val parsed = result
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        if (parsed == null) {
+            Spacer(Modifier.height(8.dp))
+            Box(
+                modifier = Modifier.size(80.dp).clip(CircleShape)
+                    .background(if (isListening) Pink50 else Green50)
+                    .border(2.dp, if (isListening) Pink400.copy(alpha = 0.4f) else Green100, CircleShape)
+                    .clickable {
+                        if (isListening) {
+                            recognizer?.stopListening()
+                            recognizer?.destroy()
+                            recognizer = null
+                            isListening = false
+                        } else {
+                            errorMsg = null
+                            permLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                SymbolBox(Icons.Filled.Mic, Color.White, Green600, 54.dp)
+            }
+            Spacer(Modifier.height(12.dp))
+            if (isListening) {
+                WaveformBars()
+                Spacer(Modifier.height(8.dp))
+                Text("Dengarkan...", color = Pink400, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                Text("Coba bilang:\n\"Beli makan siang dua puluh ribu\"", color = Muted, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 17.sp)
+            } else {
+                Text("Tekan mikrofon untuk mulai", color = Muted, fontSize = 12.sp)
+            }
+            if (errorMsg != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(errorMsg!!, color = Color(0xFFA32D2D), fontSize = 11.sp)
+            }
+        } else {
+            VoiceResultPreview(
+                parsed = parsed,
+                onConfirm = {
+                    val catId = parsed.categoryName?.let { catMap[it]?.id?.toLongOrNull() } ?: 0L
+                    val isExpense = parsed.type != com.example.ngepet.domain.model.TransactionType.INCOME
+                    onConfirm(parsed.amount.toLong(), catId, parsed.note ?: "", System.currentTimeMillis(), isExpense)
+                },
+                onRetry = {
+                    result = null
+                    errorMsg = null
+                },
+                onSwitchToManual = { onSwitchToManual(parsed) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun WaveformBars() {
+    val infiniteTransition = rememberInfiniteTransition(label = "waveform")
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        repeat(7) { index ->
+            val height by infiniteTransition.animateFloat(
+                initialValue = 6f,
+                targetValue = when (index % 3) { 0 -> 24f; 1 -> 14f; else -> 20f },
+                animationSpec = infiniteRepeatable(
+                    animation = tween(600 + index * 100, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ), label = "bar_$index"
+            )
+            Box(
+                Modifier.size(width = 4.dp, height = height.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (index % 2 == 0) Pink400 else Green600)
+            )
+        }
+    }
+}
+
+@Composable
+private fun VoiceResultPreview(
+    parsed: TransactionInputModel,
+    onConfirm: () -> Unit,
+    onRetry: () -> Unit,
+    onSwitchToManual: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.height(8.dp))
+        Box(
+            Modifier.size(64.dp).clip(CircleShape).background(Green50),
+            contentAlignment = Alignment.Center
+        ) {
+            SymbolBox(Icons.Filled.Mic, Green600, Green50, 44.dp)
+        }
+        Spacer(Modifier.height(12.dp))
+        Box(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Green50).padding(12.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Hasil deteksi", color = Green800, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                ResultRow("Nominal", "Rp ${formatRupiah(parsed.amount.toLong().toString())}")
+                ResultRow("Kategori", parsed.categoryName ?: "—")
+                ResultRow("Tipe", if (parsed.type == com.example.ngepet.domain.model.TransactionType.INCOME) "Pemasukan" else "Pengeluaran")
+                if (!parsed.note.isNullOrBlank()) {
+                    ResultRow("Catatan", parsed.note)
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Green600),
+            shape = RoundedCornerShape(13.dp)
+        ) { Text("Konfirmasi & simpan") }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+            Text("Tidak akurat? ", color = Muted, fontSize = 11.sp)
+            Text("Edit manual", color = Pink400, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onSwitchToManual() })
+        }
+        Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+            Text("atau ", color = Muted, fontSize = 11.sp)
+            Text("Coba lagi", color = Green600, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onRetry() })
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun ResultRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, color = Muted, fontSize = 11.sp)
+        Text(value, color = Green800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

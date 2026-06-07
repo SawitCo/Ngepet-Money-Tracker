@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +59,7 @@ fun HomeScreen(
             Column {
                 Text("Halo, $userName!", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             }
-            SymbolBox(Icons.Filled.Notifications, Green600, Green50, 36.dp)
+            SymbolBox(Icons.Filled.Notifications, Green600, Green50, 36.dp, contentDescription = "Notifikasi")
         }
         Spacer(Modifier.height(14.dp))
         BalanceCard(currentBalance = currentBalance, monthlyIncome = monthlyIncome, monthlyExpense = monthlyExpense)
@@ -123,11 +128,11 @@ fun DailyTipsCard(tip: String, onDismiss: () -> Unit) {
                 lineHeight = 17.sp
             )
         }
-        Text(
-            "x",
-            color = Green600,
-            fontSize = 14.sp,
-            modifier = Modifier.clickable { onDismiss() }
+        Icon(
+            Icons.Filled.Close,
+            contentDescription = "Tutup tips",
+            tint = Green600,
+            modifier = Modifier.size(18.dp).clickable { onDismiss() }
         )
     }
 }
