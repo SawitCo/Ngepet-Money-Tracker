@@ -22,69 +22,77 @@ class SpeechToTransactionAdapter {
     }
 
     private fun parseAmount(text: String): Double {
-        val numberWords = mapOf(
+        val normalized = text
+            .replace(Regex("""\b[Rr][Pp]\.?\s?"""), "")
+            .replace(Regex("""\brupiah\s?"""), "")
+
+        val hasRibuOrJuta = Regex("""\b(ribu|juta)\b""").containsMatchIn(normalized)
+
+        val currencyNum = Regex("""\d{1,3}(?:\.\d{3})+""").find(normalized)?.value
+        if (currencyNum != null) {
+            return currencyNum.replace(".", "").toDoubleOrNull() ?: 0.0
+        }
+
+        val expanded = normalized
+            .replace(Regex("""\bseperempat\b"""), "0.25")
+            .replace(Regex("""\bsetengah\b"""), "0.5")
+            .replace(Regex("""\bseratus\b"""), "satu ratus")
+            .replace(Regex("""\bseribu\b"""), "satu ribu")
+            .replace(Regex("""\bsejuta\b"""), "satu juta")
+            .replace(Regex("""\bsebelas\b"""), "satu belas")
+            .replace(Regex("""\bsepuluh\b"""), "satu puluh")
+
+        val ones = mapOf(
             "nol" to 0, "satu" to 1, "dua" to 2, "tiga" to 3, "empat" to 4,
-            "lima" to 5, "enam" to 6, "tujuh" to 7, "delapan" to 8, "sembilan" to 9,
-            "sepuluh" to 10, "sebelas" to 11, "seratus" to 100, "seribu" to 1000,
-            "sejuta" to 1_000_000
-        )
-        val multipliers = mapOf(
-            "ribu" to 1_000, "ratus" to 100, "puluh" to 10, "belas" to 11, "juta" to 1_000_000
+            "lima" to 5, "enam" to 6, "tujuh" to 7, "delapan" to 8, "sembilan" to 9
         )
 
         var total = 0.0
-        var current = 0
-        val words = text.split(" ")
+        var block = 0L
+        var current = 0L
 
-        var i = 0
-        while (i < words.size) {
-            val word = words[i]
+        for (word in expanded.split(" ")) {
             when {
-                word == "se" && i + 1 < words.size -> {
-                    val next = words[i + 1]
-                    multiplier(next)?.let { mul ->
-                        total += 1.0 * mul
-                        current = 0
-                        i += 2
-                        continue
-                    }
-                    current = 1; i++; continue
+                ones.containsKey(word) -> {
+                    block += current
+                    current = ones[word]!!.toLong()
                 }
-                word == "seperempat" -> { total += 0.25; current = 0 }
-                word == "setengah" -> { total += 0.5; current = 0 }
-                multipliers.containsKey(word) -> {
-                    val mul = multipliers[word] ?: 0
-                    total += current.coerceAtLeast(1) * mul
-                    current = 0
+                word == "belas" -> {
+                    current = (current.coerceAtLeast(1)) + 10
                 }
-                word == "setiap" || word == "per" -> { /* skip */ }
-                else -> {
-                    if (word.startsWith("se") && word.length > 2) {
-                        val root = word.substring(2)
-                        multiplier(root)?.let { mul ->
-                            total += 1.0 * mul
-                            current = 0
-                        } ?: run {
-                            val num = numberWords[word] ?: word.toIntOrNull()
-                            if (num != null) current = num
-                        }
-                    } else {
-                        val num = numberWords[word] ?: word.toIntOrNull()
-                        if (num != null) current = num
-                    }
+                word == "puluh" -> {
+                    current = (current.coerceAtLeast(1)) * 10
+                }
+                word == "ratus" -> {
+                    current = (current.coerceAtLeast(1)) * 100
+                }
+                word == "ribu" -> {
+                    block += current
+                    if (block == 0L) block = 1
+                    total += block * 1_000
+                    block = 0; current = 0
+                }
+                word == "juta" -> {
+                    block += current
+                    if (block == 0L) block = 1
+                    total += block * 1_000_000
+                    block = 0; current = 0
+                }
+                word.toIntOrNull() != null -> {
+                    val n = word.toLong()
+                    block += current
+                    current = n
                 }
             }
-            i++
         }
-        total += current
+        block += current
+        total += block
 
-        val digits = Regex("""\d+""").findAll(text).map { it.value.toLong() }.toList()
-        return maxOf(total, digits.firstOrNull()?.toDouble() ?: 0.0)
-    }
-
-    private fun multiplier(word: String): Int? = when (word) {
-        "ribu" -> 1_000; "ratus" -> 100; "puluh" -> 10; "belas" -> 11; "juta" -> 1_000_000
-        else -> null
+        if (total == 0.0) {
+            val digits = Regex("""\d+""").findAll(normalized).map { it.value.toLong() }.toList()
+            if (digits.isNotEmpty()) return digits.first().toDouble()
+        }
+        return total
     }
 
     private fun detectType(text: String): TransactionType {
@@ -113,7 +121,7 @@ class SpeechToTransactionAdapter {
             "ojek" to "Transport", "angkot" to "Transport", "bus" to "Transport",
             "transit" to "Transport", "bahan bakar" to "Transport", "tol" to "Transport",
             "belanja" to "Belanja", "baju" to "Belanja", "sepatu" to "Belanja",
-            "skincare" to "Belanja", "makeup" to "Belanja", "alat tulis" to "Belanja",
+            "skincare" to "Belanja", "makeup" to "Belanja", "alat tulis" to "Belanja", "beli" to "Belanja",
             "nonton" to "Hiburan", "film" to "Hiburan", "game" to "Hiburan",
             "streaming" to "Hiburan", "netflix" to "Hiburan", "spotify" to "Hiburan",
             "listrik" to "Tagihan", "pulsa" to "Tagihan", "air" to "Tagihan",
@@ -128,16 +136,12 @@ class SpeechToTransactionAdapter {
     }
 
     private fun cleanNote(text: String): String? {
-        val numberPattern = Regex("""\d+(\.\d+)?""")
-        val multiplierPattern = Regex("""\b(ribu|ratus|puluh|belas|juta|sejuta|seribu|seratus|seperempat|setengah)\b""")
-        val actionWords = Regex("""\b(beli|bayar|makan|ongkos|belanja|jajan|tarik|isi|terima|setor|transfer|dapet|dapat)\b""")
-        val fillerPattern = Regex("""\b(di|ke|saya|aku|sudah|telah|untuk|dan|sama|dengan|pakai|pake)\b""")
-
         val cleaned = text
-            .replace(numberPattern, "")
-            .replace(multiplierPattern, "")
-            .replace(actionWords, "")
-            .replace(fillerPattern, "")
+            .replace(Regex("""[Rr][Pp]\.?\s?"""), "")
+            .replace(Regex("""\d+(\.\d+)?"""), "")
+            .replace(Regex("""\b(ribu|ratus|puluh|belas|juta|sejuta|seribu|seratus|seperempat|setengah)\b"""), "")
+            .replace(Regex("""\b(beli|bayar|makan|ongkos|belanja|jajan|tarik|isi|terima|setor|transfer|dapet|dapat)\b"""), "")
+            .replace(Regex("""\b(di|ke|saya|aku|sudah|telah|untuk|dan|sama|dengan|pakai|pake)\b"""), "")
             .trim()
             .replace(Regex("""\s+"""), " ")
         return cleaned.ifBlank { null }

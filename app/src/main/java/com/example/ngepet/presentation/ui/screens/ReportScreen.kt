@@ -7,7 +7,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +14,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,15 +52,10 @@ import com.example.ngepet.presentation.ui.theme.Pink400
 import com.example.ngepet.presentation.ui.theme.Warning
 import java.util.Calendar
 
-val chartColors = listOf(
-    Green600, Pink400, Warning, Color(0xFF185FA5),
-    Color(0xFFB4B2A9), Color(0xFF7B61FF), Color(0xFF56C596), Color(0xFFFF8A65)
-)
-
 @Composable
 fun ReportScreen(transactions: List<TransactionUi>) {
     var selectedPeriod by remember { mutableStateOf("Bulanan") }
-    var selectedSource by remember { mutableStateOf("Semua") }
+    var showExpense by remember { mutableStateOf(true) }
 
     val now = Calendar.getInstance()
     val periodStart: Long
@@ -94,9 +91,7 @@ fun ReportScreen(transactions: List<TransactionUi>) {
     }
 
     val filtered = transactions.filter { txn ->
-        val matchesPeriod = txn.dateMillis in periodStart until periodEnd
-        val matchesSource = selectedSource == "Semua" || txn.source == selectedSource
-        matchesPeriod && matchesSource
+        txn.dateMillis in periodStart until periodEnd
     }
 
     val expenseTxs = filtered.filter { it.isExpense }
@@ -104,24 +99,29 @@ fun ReportScreen(transactions: List<TransactionUi>) {
     val totalExpense = expenseTxs.sumOf { it.amount }
     val totalIncome = incomeTxs.sumOf { it.amount }
 
-    val expenseBreakdown = if (totalExpense > 0) {
-        expenseTxs.groupBy { it.categoryName }.map { (name, txs) ->
+    val currentTxs = if (showExpense) expenseTxs else incomeTxs
+    val currentTotal = if (showExpense) totalExpense else totalIncome
+    val currentLabel = if (showExpense) "Total keluar" else "Total pemasukan"
+
+    val currentBreakdown = if (currentTotal > 0) {
+        currentTxs.groupBy { it.categoryName }.map { (name, txs) ->
             val amount = txs.sumOf { it.amount }
-            CategoryBreakdown(categoryName = name, percentage = amount.toDouble() / totalExpense, amount = amount.toDouble())
+            val icon = txs.first().categoryIcon
+            CategoryBreakdown(categoryName = name, percentage = amount.toDouble() / currentTotal, amount = amount.toDouble(), colorHex = icon)
         }.sortedByDescending { it.percentage }
     } else emptyList()
 
-    val incomeBreakdown = if (totalIncome > 0) {
-        incomeTxs.groupBy { it.categoryName }.map { (name, txs) ->
-            val amount = txs.sumOf { it.amount }
-            CategoryBreakdown(categoryName = name, percentage = amount.toDouble() / totalIncome, amount = amount.toDouble())
-        }.sortedByDescending { it.percentage }
-    } else emptyList()
-
-    val dailyTotals = expenseTxs.groupBy { txn ->
+    val dailyExpenses = expenseTxs.groupBy { txn ->
         val cal = Calendar.getInstance().apply { timeInMillis = txn.dateMillis }
         cal.get(Calendar.DAY_OF_MONTH)
     }.mapValues { (_, txs) -> txs.sumOf { it.amount } }.toSortedMap()
+
+    val dailyIncome = incomeTxs.groupBy { txn ->
+        val cal = Calendar.getInstance().apply { timeInMillis = txn.dateMillis }
+        cal.get(Calendar.DAY_OF_MONTH)
+    }.mapValues { (_, txs) -> txs.sumOf { it.amount } }.toSortedMap()
+
+    val hasChartData = dailyExpenses.isNotEmpty() || dailyIncome.isNotEmpty()
 
     ScreenColumn {
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -140,40 +140,49 @@ fun ReportScreen(transactions: List<TransactionUi>) {
                 PeriodChip("Bulanan", selectedPeriod == "Bulanan", onClick = { selectedPeriod = "Bulanan" })
             }
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                SourceChip("Semua", selectedSource == "Semua", onClick = { selectedSource = "Semua" })
-                SourceChip("Manual", selectedSource == "Manual", onClick = { selectedSource = "Manual" })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(if (showExpense) "Pengeluaran" else "Pemasukan", color = if (showExpense) Color(0xFFA32D2D) else Green600, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Switch(
+                    checked = showExpense,
+                    onCheckedChange = { showExpense = it },
+                    colors = SwitchDefaults.colors(checkedTrackColor = Green600, uncheckedTrackColor = Color(0xFFA32D2D).copy(alpha = 0.3f), checkedThumbColor = Color.White, uncheckedThumbColor = Color.White)
+                )
             }
             Spacer(Modifier.height(18.dp))
 
-            if (totalExpense > 0) {
-                DonutChart(total = totalExpense, breakdown = expenseBreakdown, label = "Total keluar")
+            if (currentTotal > 0) {
+                DonutChart(total = currentTotal, breakdown = currentBreakdown, label = currentLabel)
                 Spacer(Modifier.height(12.dp))
-                expenseBreakdown.forEachIndexed { index, item ->
-                    val color = chartColors[index % chartColors.size]
-                    ReportLegend(name = item.categoryName, percent = "${(item.percentage * 100).toInt()}%", amount = "Rp ${formatAmount(item.amount.toLong())}", color = color)
+                currentBreakdown.forEach { item ->
+                    ReportLegend(name = item.categoryName, percent = "${(item.percentage * 100).toInt()}%", amount = "Rp ${formatAmount(item.amount.toLong())}", color = categoryColor(item.colorHex))
                 }
                 Spacer(Modifier.height(18.dp))
             }
 
-            if (totalIncome > 0) {
-                DonutChart(total = totalIncome, breakdown = incomeBreakdown, label = "Total pemasukan")
-                Spacer(Modifier.height(12.dp))
-                incomeBreakdown.forEachIndexed { index, item ->
-                    val color = chartColors[(index + 4) % chartColors.size]
-                    ReportLegend(name = item.categoryName, percent = "${(item.percentage * 100).toInt()}%", amount = "Rp ${formatAmount(item.amount.toLong())}", color = color)
-                }
-                Spacer(Modifier.height(18.dp))
-            }
-
-            if (dailyTotals.isNotEmpty()) {
+            if (hasChartData) {
                 Text("Tren harian", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(10.dp))
-                DailyTrendChart(dailyTotals = dailyTotals, modifier = Modifier.fillMaxWidth().height(160.dp))
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFFE53935)))
+                        Text("Pengeluaran", color = Muted, fontSize = 10.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(Green600))
+                        Text("Pemasukan", color = Muted, fontSize = 10.sp)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                DailyTrendChart(
+                    dailyExpenses = dailyExpenses,
+                    dailyIncome = dailyIncome,
+                    periodDays = ((periodEnd - periodStart) / 86400000L).toInt().coerceAtLeast(1),
+                    modifier = Modifier.fillMaxWidth().height(180.dp)
+                )
                 Spacer(Modifier.height(18.dp))
             }
 
-            if (totalExpense == 0L && totalIncome == 0L) {
+            if (currentTotal == 0L) {
                 EmptyState("Belum cukup data untuk laporan periode ini")
             }
         }
@@ -192,9 +201,9 @@ fun DonutChart(total: Long, breakdown: List<CategoryBreakdown>, label: String) {
                 drawArc(Green50, -90f, 360f, false, topLeft, chartSize, style = stroke)
             } else {
                 var startAngle = -90f
-                breakdown.forEachIndexed { index, item ->
+                breakdown.forEach { item ->
                     val sweep = (item.percentage * 360).toFloat()
-                    drawArc(chartColors[index % chartColors.size], startAngle, sweep, false, topLeft, chartSize, style = stroke)
+                    drawArc(categoryColor(item.colorHex), startAngle, sweep, false, topLeft, chartSize, style = stroke)
                     startAngle += sweep
                 }
             }
@@ -214,50 +223,77 @@ fun DonutChart(total: Long, breakdown: List<CategoryBreakdown>, label: String) {
 }
 
 @Composable
-fun DailyTrendChart(dailyTotals: Map<Int, Long>, modifier: Modifier = Modifier) {
-    if (dailyTotals.isEmpty()) return
+fun DailyTrendChart(dailyExpenses: Map<Int, Long>, dailyIncome: Map<Int, Long>, periodDays: Int, modifier: Modifier = Modifier) {
+    val allDays = (dailyExpenses.keys + dailyIncome.keys).sorted()
+    if (allDays.isEmpty()) return
 
-    val maxVal = dailyTotals.values.max().coerceAtLeast(1)
-    val minDay = dailyTotals.keys.first()
-    val maxDay = dailyTotals.keys.last()
+    val allValues = dailyExpenses.values + dailyIncome.values
+    val maxVal = allValues.max().coerceAtLeast(1)
+    val minDay = allDays.first()
+    val maxDay = allDays.last()
     val dayRange = (maxDay - minDay).coerceAtLeast(1)
 
-    Box(modifier = modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp)) {
-        Canvas(modifier = Modifier.fillMaxWidth().height(140.dp)) {
-            val padding = 20.dp.toPx()
-            val bottomPadding = 24.dp.toPx()
-            val chartW = size.width - padding * 2
-            val chartH = size.height - padding - bottomPadding
+    val xLabelCount = when {
+        periodDays <= 3 -> periodDays + 1
+        periodDays <= 10 -> 5
+        periodDays <= 20 -> 4
+        else -> 5
+    }
 
-            val points = dailyTotals.map { (day, amount) ->
-                val x = padding + (day - minDay).toFloat() / dayRange * chartW
-                val y = padding + chartH - (amount.toFloat() / maxVal * chartH)
-                Offset(x, y)
-            }
+    val expenseColor = Color(0xFFE53935)
+    val incomeColor = Green600
+
+    Box(modifier = modifier.offset(x = (-16).dp)) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(160.dp)) {
+            val topPadding = 12.dp.toPx()
+            val bottomPadding = 28.dp.toPx()
+            val labelArea = 48.dp.toPx()
+            val gap = 12.dp.toPx()
+            val chartW = size.width - labelArea - gap
+            val chartH = size.height - topPadding - bottomPadding
 
             val gridLines = 4
             for (i in 0..gridLines) {
-                val y = padding + chartH * i / gridLines
-                drawLine(Color(0xFFE0E0E0), Offset(padding, y), Offset(size.width - padding, y), strokeWidth = 0.5f)
+                val y = topPadding + chartH * i / gridLines
+                drawLine(Color(0xFFCCCCCC), Offset(labelArea + gap, y), Offset(size.width, y), strokeWidth = 1f)
                 val labelVal = maxVal * (gridLines - i) / gridLines
                 drawContext.canvas.nativeCanvas.drawText(
-                    "${labelVal / 1000}k", 0f, y + 4f,
-                    android.graphics.Paint().apply { color = 0xFF888780.toInt(); textSize = 18f; textAlign = android.graphics.Paint.Align.LEFT }
+                    if (labelVal >= 1_000_000) "${labelVal / 1_000_000}jt" else if (labelVal >= 1_000) "${labelVal / 1_000}k" else "$labelVal",
+                    labelArea, y + 5f,
+                    android.graphics.Paint().apply { color = 0xFF888780.toInt(); textSize = 20f; textAlign = android.graphics.Paint.Align.RIGHT }
                 )
             }
 
-            if (points.size >= 2) {
-                val path = Path()
-                path.moveTo(points[0].x, points[0].y)
-                for (i in 1 until points.size) {
-                    path.lineTo(points[i].x, points[i].y)
+            fun drawLine(data: Map<Int, Long>, color: Color) {
+                val pts = data.map { (day, amount) ->
+                    val x = labelArea + gap + (day - minDay).toFloat() / dayRange * chartW
+                    val y = topPadding + chartH - (amount.toFloat() / maxVal * chartH)
+                    Offset(x, y)
                 }
-                drawPath(path, Green600, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
+                if (pts.size >= 2) {
+                    val path = Path()
+                    path.moveTo(pts[0].x, pts[0].y)
+                    for (i in 1 until pts.size) {
+                        path.lineTo(pts[i].x, pts[i].y)
+                    }
+                    drawPath(path, color, style = Stroke(width = 3.5f, cap = StrokeCap.Round))
+                }
+                pts.forEach { pt ->
+                    drawCircle(Color.White, 5.dp.toPx(), pt)
+                    drawCircle(color, 4.dp.toPx(), pt)
+                }
             }
 
-            points.forEach { point ->
-                drawCircle(Color.White, 4.dp.toPx(), point)
-                drawCircle(Green600, 3.dp.toPx(), point)
+            drawLine(dailyExpenses, expenseColor)
+            drawLine(dailyIncome, incomeColor)
+
+            for (i in 0..xLabelCount) {
+                val day = minDay + dayRange * i / xLabelCount
+                val x = labelArea + gap + (day - minDay).toFloat() / dayRange * chartW
+                drawContext.canvas.nativeCanvas.drawText(
+                    "$day", x, size.height - 4.dp.toPx(),
+                    android.graphics.Paint().apply { color = 0xFF888780.toInt(); textSize = 18f; textAlign = android.graphics.Paint.Align.CENTER }
+                )
             }
         }
     }
@@ -274,21 +310,6 @@ fun PeriodChip(label: String, selected: Boolean, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         color = if (selected) Color.White else Muted,
-        fontSize = 11.sp
-    )
-}
-
-@Composable
-fun SourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        label,
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (selected) Green50 else CardSoft)
-            .border(1.dp, if (selected) Green100 else Color.Black.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        color = if (selected) Green800 else Color(0xFF666666),
         fontSize = 11.sp
     )
 }

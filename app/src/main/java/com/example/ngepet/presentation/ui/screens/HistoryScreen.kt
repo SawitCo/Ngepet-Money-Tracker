@@ -86,7 +86,8 @@ fun HistoryScreen(
                 items(filteredTransactions, key = { it.id }) { txn ->
                     TransactionRow(
                         item = txn,
-                        onClick = { onEditTransaction(txn) },
+                        onClick = {},
+                        onEdit = { onEditTransaction(txn) },
                         onDelete = { onDeleteTransaction(txn.id) }
                     )
                 }

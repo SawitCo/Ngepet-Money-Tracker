@@ -128,13 +128,14 @@ fun OnboardingScreen(initialName: String, initialBalance: Long, onComplete: (Str
                 }
                 if (pageIndex == 3) {
                     Spacer(Modifier.height(24.dp))
+                    val displayBalance = formatRupiah(balanceInput)
                     OutlinedTextField(
-                        value = balanceInput,
+                        value = displayBalance,
                         onValueChange = { balanceInput = it.filter { c -> c.isDigit() } },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         label = { Text("Saldo awal") },
-                        placeholder = { Text("Contoh: 500000") },
+                        placeholder = { Text("Contoh: 500.000") },
                         leadingIcon = { Text("Rp", color = Muted) },
                         shape = RoundedCornerShape(14.dp)
                     )

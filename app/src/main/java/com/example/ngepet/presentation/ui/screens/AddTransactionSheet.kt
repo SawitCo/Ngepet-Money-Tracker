@@ -103,6 +103,8 @@ fun AddTransactionSheet(
         categories.associateBy { it.name }
     }
 
+    var voicePreFill by remember { mutableStateOf<TransactionUi?>(null) }
+
     Column(
         modifier = Modifier.fillMaxWidth().imePadding().navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 10.dp)
@@ -125,15 +127,40 @@ fun AddTransactionSheet(
                 slideOutHorizontally(tween(200)) { -dir * it }
         }, label = "ModeSwitch") { currentMode ->
             if (currentMode == InputSheetMode.Manual) {
-                ManualInputContent(categories = categories, editTxn = editTxn, onSave = onSave, onUpdate = onUpdate)
+                ManualInputContent(
+                    categories = categories,
+                    editTxn = editTxn ?: voicePreFill,
+                    onSave = { amount, catId, note, dateMillis, isExpense ->
+                        voicePreFill = null
+                        onSave(amount, catId, note, dateMillis, isExpense)
+                    },
+                    onUpdate = onUpdate
+                )
             } else {
+                voicePreFill = null
                 VoiceInputContent(
                     categories = categories,
                     catMap = catMap,
                     onConfirm = { amount, catId, note, dateMillis, isExpense ->
                         onSave(amount, catId, note, dateMillis, isExpense)
                     },
-                    onSwitchToManual = { onModeChange(InputSheetMode.Manual) }
+                    onSwitchToManual = { parsed ->
+                        val catId = parsed.categoryName?.let { name ->
+                            catMap[name]?.id?.toLongOrNull()
+                                ?: catMap["Lainnya"]?.id?.toLongOrNull()
+                        } ?: 0L
+                        voicePreFill = TransactionUi(
+                            id = "",
+                            amount = parsed.amount.toLong(),
+                            categoryName = parsed.categoryName ?: "Lainnya",
+                            categoryIcon = categories.find { it.id == catId.toString() }?.iconName ?: "MoreHoriz",
+                            categoryId = catId.toString(),
+                            note = parsed.note ?: "",
+                            dateMillis = System.currentTimeMillis(),
+                            isExpense = parsed.type != com.example.ngepet.domain.model.TransactionType.INCOME
+                        )
+                        onModeChange(InputSheetMode.Manual)
+                    }
                 )
             }
         }
@@ -205,7 +232,7 @@ fun ManualInputContent(
         onClick = {
             val amountValue = amountRaw.toLongOrNull() ?: 0L
             val catId = selectedCategory.toLongOrNull() ?: 0L
-            if (isEditing && onUpdate != null) {
+                if (isEditing && editTxn!!.id.isNotBlank() && onUpdate != null) {
                 onUpdate(editTxn!!.id, amountValue, catId, note, selectedDateMillis, selectedType == "Pengeluaran")
             } else {
                 onSave(amountValue, catId, note, selectedDateMillis, selectedType == "Pengeluaran")
@@ -246,6 +273,7 @@ fun VoiceInputContent(
 
     var isListening by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<TransactionInputModel?>(null) }
+    var rawText by remember { mutableStateOf<String?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
 
@@ -276,6 +304,7 @@ fun VoiceInputContent(
                     isListening = false
                     val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     if (!matches.isNullOrEmpty()) {
+                        rawText = matches[0]
                         result = adapter.adapt(matches[0])
                     }
                     recognizer?.destroy()
@@ -324,14 +353,20 @@ fun VoiceInputContent(
                 SymbolBox(Icons.Filled.Mic, Color.White, Green600, 54.dp)
             }
             Spacer(Modifier.height(12.dp))
-            if (isListening) {
-                WaveformBars()
-                Spacer(Modifier.height(8.dp))
-                Text("Dengarkan...", color = Pink400, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(4.dp))
-                Text("Coba bilang:\n\"Beli makan siang dua puluh ribu\"", color = Muted, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 17.sp)
-            } else {
-                Text("Tekan mikrofon untuk mulai", color = Muted, fontSize = 12.sp)
+            Box(Modifier.height(90.dp), contentAlignment = Alignment.TopCenter) {
+                if (isListening) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.height(26.dp), contentAlignment = Alignment.Center) {
+                            WaveformBars()
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text("Dengarkan...", color = Pink400, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Coba bilang:\n\"Beli makan siang dua puluh ribu\"", color = Muted, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 17.sp)
+                    }
+                } else {
+                    Text("Tekan mikrofon untuk mulai", color = Muted, fontSize = 12.sp)
+                }
             }
             if (errorMsg != null) {
                 Spacer(Modifier.height(8.dp))
@@ -340,13 +375,18 @@ fun VoiceInputContent(
         } else {
             VoiceResultPreview(
                 parsed = parsed,
+                rawText = rawText,
                 onConfirm = {
-                    val catId = parsed.categoryName?.let { catMap[it]?.id?.toLongOrNull() } ?: 0L
+                    val catId = parsed.categoryName?.let { name ->
+                        catMap[name]?.id?.toLongOrNull()
+                            ?: catMap["Lainnya"]?.id?.toLongOrNull()
+                    } ?: 0L
                     val isExpense = parsed.type != com.example.ngepet.domain.model.TransactionType.INCOME
                     onConfirm(parsed.amount.toLong(), catId, parsed.note ?: "", System.currentTimeMillis(), isExpense)
                 },
                 onRetry = {
                     result = null
+                    rawText = null
                     errorMsg = null
                 },
                 onSwitchToManual = { onSwitchToManual(parsed) }
@@ -380,6 +420,7 @@ private fun WaveformBars() {
 @Composable
 private fun VoiceResultPreview(
     parsed: TransactionInputModel,
+    rawText: String?,
     onConfirm: () -> Unit,
     onRetry: () -> Unit,
     onSwitchToManual: () -> Unit
@@ -398,6 +439,9 @@ private fun VoiceResultPreview(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Hasil deteksi", color = Green800, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                if (!rawText.isNullOrBlank()) {
+                    ResultRow("Terdeteksi", "\"$rawText\"")
+                }
                 ResultRow("Nominal", "Rp ${formatRupiah(parsed.amount.toLong().toString())}")
                 ResultRow("Kategori", parsed.categoryName ?: "—")
                 ResultRow("Tipe", if (parsed.type == com.example.ngepet.domain.model.TransactionType.INCOME) "Pemasukan" else "Pengeluaran")
