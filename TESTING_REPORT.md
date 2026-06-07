@@ -2,7 +2,7 @@
 **Aplikasi:** Ngepet (com.example.ngepet) — Aplikasi pencatat keuangan Android
 **Stack:** Kotlin, Jetpack Compose, Room, Hilt, Android SpeechRecognizer
 **Tanggal:** 7 Juni 2026
-**Jumlah Total Test:** 65 test cases
+**Jumlah Total Test:** 69 test cases
 **Status:** LULUS SEMUA
 
 ---
@@ -20,7 +20,9 @@
 | **Total Unit Test** | **55** | **55** | **0** |
 | Integration Test — DAO (Room) | 8 | 8 | 0 |
 | **Total Integration Test** | **8** | **8** | **0** |
-| **GRAND TOTAL** | **65** | **65** | **0** |
+| System Test — End-to-End (Compose UI) | 4 | 4 | 0 |
+| **Total System Test** | **4** | **4** | **0** |
+| **GRAND TOTAL** | **69** | **69** | **0** |
 
 **Coverage:** 100% test pass rate
 
@@ -163,7 +165,20 @@
 
 ---
 
-## 4. Dependensi Pengujian
+## 4. Detail System Tests (End-to-End)
+
+### 4.1 SystemNavigationTest (4 test)
+
+| ID | Skenario | Langkah | Expected | Status |
+|----|----------|---------|----------|--------|
+| SYS-06 | Navigasi antar screen tanpa crash | Tap Home → Riwayat → Laporan → Budget → Home | Semua screen dapat diakses tanpa crash | LULUS |
+| SYS-06 | Buka sheet tambah transaksi | Tap FAB (+) → sheet terbuka | Sheet Manual/Suara terbuka, chip "Manual" dan "Suara" terlihat | LULUS |
+| SYS-04 | Filter riwayat tampil | Buka Riwayat → lihat filter | Chip filter (Sumber input, Kategori) terlihat | LULUS |
+| SYS-05 | Ganti periode laporan | Buka Laporan → tap Harian → Mingguan → Bulanan | Period chip berubah, tidak crash | LULUS |
+
+---
+
+## 5. Dependensi Pengujian
 
 | Library | Versi | Fungsi |
 |---------|-------|--------|
@@ -190,7 +205,7 @@
 
 ## 6. Kesimpulan
 
-Seluruh **65 test cases** berhasil lulus tanpa ada kegagalan. Pengujian mencakup:
+Seluruh **69 test cases** berhasil lulus tanpa ada kegagalan. Pengujian mencakup:
 
 - **Adapter Pattern** (SpeechToTransactionAdapter): Parsing angka bahasa Indonesia, deteksi tipe transaksi, mapping kategori, pembersihan catatan
 - **Strategy Pattern** (ReportStrategy): Kalkulasi laporan harian, mingguan, bulanan dengan filter waktu yang benar
@@ -198,6 +213,7 @@ Seluruh **65 test cases** berhasil lulus tanpa ada kegagalan. Pengujian mencakup
 - **Repository Layer**: Konversi Entity↔Domain, panggilan DAO yang benar, handling ID valid/invalid
 - **ViewModel Layer**: Operasi CRUD, snackbar event, state flow initialization
 - **Room Database**: Insert/query/delete, urutan data, filter bulan/tahun
+- **System Tests (End-to-End)**: Navigasi antar screen, buka sheet transaksi, filter riwayat, ganti periode laporan
 
 ---
 
