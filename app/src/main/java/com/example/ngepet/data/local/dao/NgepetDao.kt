@@ -3,6 +3,7 @@ package com.example.ngepet.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.example.ngepet.data.local.entity.CategoryEntity
 import com.example.ngepet.data.local.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,9 @@ interface TransactionDao {
 
     @Insert
     suspend fun insertTransaction(transaction: TransactionEntity): @JvmSuppressWildcards Long
+
+    @Update
+    fun updateTransaction(transaction: TransactionEntity)
 
     @Query("DELETE FROM transactions WHERE id = :id")
     fun deleteTransactionById(id: Long)

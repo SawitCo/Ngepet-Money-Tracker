@@ -61,11 +61,11 @@ import com.example.ngepet.presentation.ui.theme.Pink50
 import com.example.ngepet.presentation.ui.theme.Pink800
 import com.example.ngepet.presentation.ui.theme.SurfaceWarm
 
-enum class NgepetTab(val label: String, val icon: ImageVector) {
-    Home("Home", Icons.Filled.Home),
-    History("Riwayat", Icons.AutoMirrored.Filled.List),
-    Report("Laporan", Icons.Filled.PieChart),
-    Budget("Budget", Icons.Filled.TrackChanges)
+enum class NgepetTab(val labelRes: Int, val icon: ImageVector) {
+    Home(com.example.ngepet.R.string.nav_home, Icons.Filled.Home),
+    History(com.example.ngepet.R.string.nav_history, Icons.AutoMirrored.Filled.List),
+    Report(com.example.ngepet.R.string.nav_report, Icons.Filled.PieChart),
+    Budget(com.example.ngepet.R.string.nav_budget, Icons.Filled.TrackChanges)
 }
 
 enum class InputSheetMode { Manual, Voice }
@@ -137,23 +137,43 @@ fun SourceBadge(source: String) {
 }
 
 @Composable
-fun TransactionRow(item: TransactionUi) {
+fun TransactionRow(item: TransactionUi, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp)
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        SymbolBox(iconForName(item.categoryIcon), Green600, Green50, 36.dp)
+        SymbolBox(iconForName(item.categoryIcon), categoryColor(item.categoryIcon), categoryBgColor(item.categoryIcon), 36.dp)
         Column(Modifier.weight(1f)) {
-            Text(item.note, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(item.note.ifBlank { item.categoryName }, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(item.categoryName, color = Muted, fontSize = 10.sp)
                 SourceBadge(item.source)
             }
         }
-        Text("Rp ${formatRupiah(item.amount.toString())}", color = if (!item.isExpense) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Column(horizontalAlignment = Alignment.End) {
+            Text("Rp ${formatRupiah(item.amount.toString())}", color = if (!item.isExpense) Green600 else Danger, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(formatDate(item.dateMillis), color = Muted, fontSize = 9.sp)
+        }
+    }
+}
+
+fun formatDate(millis: Long): String {
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = millis }
+    val now = java.util.Calendar.getInstance()
+    val days = arrayOf("Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu")
+    val months = arrayOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+    return when {
+        cal.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR) &&
+            cal.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR) ->
+            "Hari ini"
+        cal.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR) - 1 &&
+            cal.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR) ->
+            "Kemarin"
+        else -> "${cal.get(java.util.Calendar.DAY_OF_MONTH)} ${months[cal.get(java.util.Calendar.MONTH)]}"
     }
 }
 
@@ -197,6 +217,7 @@ fun BottomNavigationBar(
 
 @Composable
 fun NavItem(tab: NgepetTab, selected: Boolean, onTabSelected: (NgepetTab) -> Unit) {
+    val label = androidx.compose.ui.res.stringResource(tab.labelRes)
     Column(
         modifier = Modifier.clickable { onTabSelected(tab) }.width(58.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -204,16 +225,44 @@ fun NavItem(tab: NgepetTab, selected: Boolean, onTabSelected: (NgepetTab) -> Uni
     ) {
         Icon(
             imageVector = tab.icon,
-            contentDescription = tab.label,
+            contentDescription = label,
             tint = if (selected) Green600 else Muted,
             modifier = Modifier.size(21.dp)
         )
-        Text(tab.label, color = if (selected) Green600 else Muted, fontSize = 10.sp)
+        Text(label, color = if (selected) Green600 else Muted, fontSize = 10.sp)
     }
 }
 
 fun formatAmount(amount: Long): String {
     return String.format("%,d", amount).replace(",", ".")
+}
+
+fun categoryColor(iconName: String): Color {
+    return when (iconName) {
+        "Restaurant" -> Color(0xFF3B6D11)
+        "Commute" -> Color(0xFF1E88E5)
+        "ShoppingCart" -> Color(0xFFFB8C00)
+        "Payments" -> Color(0xFF00897B)
+        "Movie" -> Color(0xFF8E24AA)
+        "Receipt" -> Color(0xFFE53935)
+        "LocalHospital" -> Color(0xFF00ACC1)
+        "MoreHoriz" -> Muted
+        else -> Green600
+    }
+}
+
+fun categoryBgColor(iconName: String): Color {
+    return when (iconName) {
+        "Restaurant" -> Color(0xFFEAF3DE)
+        "Commute" -> Color(0xFFE3F2FD)
+        "ShoppingCart" -> Color(0xFFFFF3E0)
+        "Payments" -> Color(0xFFE0F2F1)
+        "Movie" -> Color(0xFFF3E5F5)
+        "Receipt" -> Color(0xFFFFEBEE)
+        "LocalHospital" -> Color(0xFFE0F7FA)
+        "MoreHoriz" -> Color(0xFFF0F0EB)
+        else -> Green50
+    }
 }
 
 fun iconForName(name: String): ImageVector {

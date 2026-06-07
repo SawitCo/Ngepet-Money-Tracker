@@ -8,6 +8,7 @@ data class TransactionUi(
     val amount: Long,
     val categoryName: String,
     val categoryIcon: String,
+    val categoryId: String = "",
     val note: String,
     val dateMillis: Long,
     val isExpense: Boolean,
@@ -21,6 +22,8 @@ data class CategoryUi(
 )
 
 data class BudgetUi(
+    val id: String = "",
+    val categoryId: String = "",
     val category: String,
     val period: String,
     val used: String,

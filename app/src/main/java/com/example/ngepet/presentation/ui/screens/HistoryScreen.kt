@@ -40,11 +40,15 @@ import com.example.ngepet.presentation.ui.theme.Pink50
 import com.example.ngepet.presentation.ui.theme.Pink800
 
 @Composable
-fun HistoryScreen(transactions: List<TransactionUi>) {
+fun HistoryScreen(
+    transactions: List<TransactionUi>,
+    onEditTransaction: (TransactionUi) -> Unit,
+    onDeleteTransaction: (String) -> Unit
+) {
     var selectedSource by remember { mutableStateOf("Semua") }
     var selectedCategory by remember { mutableStateOf("Semua kategori") }
     val filteredTransactions = transactions.filter { transaction ->
-        val matchesSource = selectedSource == "Semua" || transaction.note.contains(selectedSource, ignoreCase = true)
+        val matchesSource = selectedSource == "Semua" || transaction.source == selectedSource
         val matchesCategory = selectedCategory == "Semua kategori" || transaction.categoryName == selectedCategory
         matchesSource && matchesCategory
     }
@@ -70,8 +74,14 @@ fun HistoryScreen(transactions: List<TransactionUi>) {
             if (filteredTransactions.isEmpty()) {
                 item { EmptyState("Tidak ada transaksi yang cocok dengan filter ini") }
             } else {
-                item { DateSeparator("Hasil filter") }
-                items(filteredTransactions) { TransactionRow(it) }
+                item { DateSeparator("Riwayat transaksi") }
+                items(filteredTransactions, key = { it.id }) { txn ->
+                    TransactionRow(
+                        item = txn,
+                        onClick = { onEditTransaction(txn) },
+                        onDelete = { onDeleteTransaction(txn.id) }
+                    )
+                }
             }
         }
     }
@@ -94,14 +104,7 @@ fun HistoryFilters(
         )
         FilterGroup(
             label = "Kategori",
-            chips = listOf(
-                "Semua kategori",
-                "Makanan",
-                "Transport",
-                "Belanja",
-                "Tagihan",
-                "Kesehatan"
-            ),
+            chips = listOf("Semua kategori", "Makanan", "Transport", "Belanja", "Tagihan", "Kesehatan"),
             selectedChip = selectedCategory,
             onChipSelected = onCategorySelected
         )

@@ -6,8 +6,10 @@ import com.example.ngepet.domain.model.InputType
 import com.example.ngepet.domain.model.Transaction
 import com.example.ngepet.domain.model.TransactionType
 import com.example.ngepet.domain.repository.TransactionRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 class TransactionRepositoryImpl(
     private val transactionDao: TransactionDao
@@ -21,6 +23,10 @@ class TransactionRepositoryImpl(
 
     override suspend fun insertTransaction(transaction: Transaction) {
         transactionDao.insertTransaction(transaction.toEntity())
+    }
+
+    override suspend fun updateTransaction(transaction: Transaction) {
+        transactionDao.updateTransaction(transaction.toEntity())
     }
 
     override suspend fun deleteTransaction(id: String) {
