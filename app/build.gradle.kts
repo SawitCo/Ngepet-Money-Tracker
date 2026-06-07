@@ -80,9 +80,10 @@ dependencies {
 
 tasks.withType<Test> {
     testLogging {
-        events("passed", "skipped", "failed", "standardOut")
+        events("passed", "skipped", "failed", "started", "standardOut", "standardError")
         showExceptions = true
         showCauses = true
         showStackTraces = true
+        exceptionFormat = "full"
     }
 }
