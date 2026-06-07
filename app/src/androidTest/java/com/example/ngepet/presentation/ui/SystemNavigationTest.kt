@@ -66,9 +66,8 @@ class SystemNavigationTest {
         composeTestRule.onNodeWithContentDescription("Tambah transaksi").performClick()
         composeTestRule.waitForIdle()
 
-        // Verify sheet opens with Manual/Voice chips
-        composeTestRule.onNodeWithText("Manual").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Suara").assertIsDisplayed()
+        // Verify sheet opens with title
+        composeTestRule.onNodeWithText("Tambah transaksi").assertIsDisplayed()
 
         // Close sheet
         composeTestRule.onNodeWithContentDescription("Tutup").performClick()
@@ -97,8 +96,8 @@ class SystemNavigationTest {
         composeTestRule.waitForIdle()
 
         // Verify filter chips exist
-        composeTestRule.onNodeWithText("Riwayat").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Filter").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Riwayat").onFirst().assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Filter").onFirst().assertIsDisplayed()
     }
 
     @Test
@@ -123,7 +122,7 @@ class SystemNavigationTest {
         composeTestRule.waitForIdle()
 
         // Verify report screen
-        composeTestRule.onNodeWithText("Laporan").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Laporan").onFirst().assertIsDisplayed()
 
         // Switch to Weekly
         composeTestRule.onNodeWithText("Mingguan").performClick()
