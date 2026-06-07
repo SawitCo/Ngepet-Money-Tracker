@@ -11,13 +11,13 @@
 
 | Kategori | Jumlah Test | Lulus | Gagal |
 |----------|-------------|-------|-------|
-| Unit Test — Adapter (Data) | 15 | 15 | 0 |
+| Unit Test — Adapter (Data) | 22 | 22 | 0 |
 | Unit Test — Strategy (Domain) | 13 | 13 | 0 |
 | Unit Test — Factory (Domain) | 6 | 6 | 0 |
 | Unit Test — Repository (Data) | 11 | 11 | 0 |
 | Unit Test — ViewModel (Presentation) | 9 | 9 | 0 |
 | Unit Test — Contoh (Placeholder) | 1 | 1 | 0 |
-| **Total Unit Test** | **55** | **55** | **0** |
+| **Total Unit Test** | **62** | **62** | **0** |
 | Integration Test — DAO (Room) | 8 | 8 | 0 |
 | **Total Integration Test** | **8** | **8** | **0** |
 | System Test — End-to-End (Compose UI) | 4 | 4 | 0 |
@@ -28,157 +28,153 @@
 
 ---
 
-## 2. Detail Unit Tests
+## 2. Hasil Pengujian Per Skenario
 
-### 2.1 SpeechToTransactionAdapterTest (15 test)
+### 2.1 Pengujian Skenario SYS-01: Tambah Transaksi Manual
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-01 | parseAmount — word-based ribu | "beli makan dua puluh ribu" | amount = 20.000 | LULUS |
-| UT-02 | parseAmount — Rp prefix dengan dot | "gajian Rp30.000" | amount = 30.000 | LULUS |
-| UT-03 | parseAmount — digit saja | "beli baju 50000" | amount = 50.000 | LULUS |
-| UT-04 | parseAmount — seratus ribu | "seratus ribu" | amount = 100.000 | LULUS |
-| UT-05 | parseAmount — dua ratus lima puluh | "dua ratus lima puluh" | amount = 250 | LULUS |
-| UT-06 | parseAmount — lima juta | "lima juta" | amount = 5.000.000 | LULUS |
-| UT-07 | parseAmount — tanpa angka | "beli makan" | amount = 0 | LULUS |
-| UT-08 | parseAmount —Rp tanpa spasi | "Rp30.000" | amount = 30.000 | LULUS |
-| UT-09 | parseAmount — frasa lengkap | "gajian Rp30.000" | amount = 30.000 | LULUS |
-| UT-10 | detectType — gajian = INCOME | "gajian dua puluh ribu" | type = INCOME | LULUS |
-| UT-11 | detectType — beli = EXPENSE | "beli makan dua puluh ribu" | type = EXPENSE | LULUS |
-| UT-12 | detectType — bayar = EXPENSE | "bayar listrik seratus ribu" | type = EXPENSE | LULUS |
-| UT-13 | detectType — terima = INCOME | "terima transfer lima ratus ribu" | type = INCOME | LULUS |
-| UT-14 | detectCategory — makan → Makanan | "beli makan siang" | category = "Makanan" | LULUS |
-| UT-15 | detectCategory — gaji → Pekerjaan | "gaji lima juta" | category = "Pekerjaan" | LULUS |
-| UT-16 | detectCategory — gojek → Transport | "bayar gojek dua puluh ribu" | category = "Transport" | LULUS |
-| UT-17 | detectCategory — listrik → Tagihan | "bayar listrik seratus ribu" | category = "Tagihan" | LULUS |
-| UT-18 | detectCategory — obat → Kesehatan | "bayar obat tiga puluh ribu" | category = "Kesehatan" | LULUS |
-| UT-19 | detectCategory — beli tanpa keyword → Belanja | "beli sesuatu dua puluh ribu" | category = "Belanja" | LULUS |
-| UT-20 | cleanNote — hapus action words dan multiplier | "beli makan dua puluh ribu" | note tidak mengandung "beli", "makan", "puluh", "ribu" | LULUS |
-| UT-21 | cleanNote — hapus Rp | "beli makan Rp30.000" | note tidak mengandung "Rp" | LULUS |
-| UT-22 | cleanNote — return null jika kosong | "20000" | note = null | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Form tambah transaksi dapat dibuka | LULUS |
+| Field nominal, kategori, catatan, tanggal tersedia | LULUS |
+| Transaksi tersimpan ke database | LULUS |
+| Snackbar konfirmasi "Transaksi tersimpan" muncul | LULUS |
 
-### 2.2 MonthlyReportStrategyTest (5 test)
+### 2.2 Pengujian Skenario SYS-02: Tambah Transaksi Suara
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-23 | Hitung data kosong | emptyList() | totalIncome=0, totalExpense=0, breakdown kosong | LULUS |
-| UT-24 | Aggregasi expense | 3 transaksi expense (50k, 30k, 20k) | totalExpense=100.000 | LULUS |
-| UT-25 | Aggregasi income | 2 transaksi income (5jt, 1jt) | totalIncome=6.000.000 | LULUS |
-| UT-26 | Persentase breakdown benar | 60k + 40k expense | breakdown = [60%, 40%] | LULUS |
-| UT-27 | Label periode "Bulanan" | emptyList() | period = "Bulanan" | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Mic button dapat diklik | LULUS |
+| Permission RECORD_AUDIO diminta | LULUS |
+| SpeechRecognizer aktif dan menangkap suara | LULUS |
+| Hasil transkripsi ditampilkan di "Terdeteksi" | LULUS |
+| Parsing amount dari ucapan berhasil (contoh: "dua puluh ribu" → Rp 20.000) | LULUS |
+| Parsing kategori dari ucapan berhasil (contoh: "makan" → Makanan) | LULUS |
+| Tipe transaksi (pemasukan/pengeluaran) terdeteksi | LULUS |
+| Konfirmasi & simpan berhasil | LULUS |
+| Edit manual dari hasil voice berfungsi | LULUS |
 
-### 2.3 WeeklyReportStrategyTest (4 test)
+### 2.3 Pengujian Skenario SYS-03: Set Budget & Alert
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-28 | Data kosong | emptyList() | totalIncome=0, totalExpense=0 | LULUS |
-| UT-29 | Sertakan transaksi minggu ini | 2 transaksi (now + 3 hari lalu) | totalExpense=80.000 | LULUS |
-| UT-30 | Buang transaksi > 7 hari | 2 transaksi (now + 10 hari lalu) | totalExpense=50.000 | LULUS |
-| UT-31 | Label periode "Mingguan" | emptyList() | period = "Mingguan" | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Budget baru dapat ditambahkan per kategori | LULUS |
+| Budget tersimpan ke database | LULUS |
+| Progress bar menunjukkan persentase penggunaan | LULUS |
+| Status "Aman" muncul jika < 70% | LULUS |
+| Status "Hampir habis" muncul jika 70-99% | LULUS |
+| Status "Melebihi limit" muncul jika ≥ 100% | LULUS |
+| Budget dapat diedit dan dihapus | LULUS |
 
-### 2.4 DailyReportStrategyTest (4 test)
+### 2.4 Pengujian Skenario SYS-04: Filter Riwayat
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-32 | Data kosong | emptyList() | totalIncome=0, totalExpense=0 | LULUS |
-| UT-33 | Sertakan transaksi hari ini | 2 transaksi (now) | totalExpense=25.000, totalIncome=10.000 | LULUS |
-| UT-34 | Buang transaksi kemarin | 2 transaksi (now + 2 hari lalu) | totalExpense=25.000 | LULUS |
-| UT-35 | Label periode "Harian" | emptyList() | period = "Harian" | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Chip filter "Sumber input" tersedia (Semua, Suara, Manual) | LULUS |
+| Chip filter "Kategori" tersedia | LULUS |
+| Filter berfungsi mempersempit hasil | LULUS |
+| Transaksi yang tidak cocok tidak ditampilkan | LULUS |
+| Long-press menampilkan tombol Edit dan Hapus | LULUS |
 
-### 2.5 ManualInputFactoryTest (3 test)
+### 2.5 Pengujian Skenario SYS-05: Ganti Periode Laporan
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-36 | inputType adalah MANUAL | — | inputType = MANUAL | LULUS |
-| UT-37 | createTransaction inputType MANUAL | amount=50000, catId="1" | tx.inputType = MANUAL, tx.amount = 50000 | LULUS |
-| UT-38 | createDefaultCategory "Umum" | — | name="Umum", iconName="Receipt" | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Switch Pengeluaran/Pemasukan berfungsi | LULUS |
+| Donut chart menampilkan data sesuai switch | LULUS |
+| Legend kategori ditampilkan dengan warna yang benar | LULUS |
+| Period chip Harian/Mingguan/Bulanan berfungsi | LULUS |
+| Line chart menampilkan tren harian (merah=pengeluaran, hijau=pemasukan) | LULUS |
+| Y-axis label dan grid line ditampilkan dengan gap yang cukup | LULUS |
 
-### 2.6 VoiceInputFactoryTest (3 test)
+### 2.6 Pengujian Skenario SYS-06: Navigasi Antar Screen
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-39 | inputType adalah VOICE | — | inputType = VOICE | LULUS |
-| UT-40 | createTransaction inputType VOICE | amount=20000, catId="2" | tx.inputType = VOICE, tx.amount = 20000 | LULUS |
-| UT-41 | createDefaultCategory "Belum dikategorikan" | — | name="Belum dikategorikan", iconName="Help" | LULUS |
-
-### 2.7 TransactionRepositoryImplTest (5 test)
-
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-42 | insertTransaction panggil DAO | Transaction(50000, catId="1") | dao.insertTransaction dipanggil 1x dengan entity benar | LULUS |
-| UT-43 | insertTransaction — income maps isExpense false | Transaction(INCOME) | entity.isExpense = false | LULUS |
-| UT-44 | getAllTransactions map entity ke domain | 2 entities | result[0].id="2", result[0].type=INCOME | LULUS |
-| UT-45 | deleteTransaction panggil DAO | deleteTransaction("42") | dao.deleteTransactionById(42L) dipanggil | LULUS |
-| UT-46 | deleteTransaction — id invalid tidak panggil DAO | deleteTransaction("abc") | dao tidak dipanggil | LULUS |
-
-### 2.8 CategoryRepositoryImplTest (2 test)
-
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-47 | insertCategory panggil DAO | Category("Makanan", "Restaurant") | dao.insertCategory dipanggil dengan name="Makanan" | LULUS |
-| UT-48 | getAllCategories map entity ke domain | 3 entities | result[0].name="Makanan", result.size=3 | LULUS |
-
-### 2.9 BudgetRepositoryImplTest (4 test)
-
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| UT-49 | upsertBudget panggil DAO | Budget(catId="1", limit=500000) | dao.insertBudget dipanggil dengan limit=500000 | LULUS |
-| UT-50 | getBudgets return mapped domain | 2 entities | result[0].limit=600000, result.size=2 | LULUS |
-| UT-51 | deleteBudget panggil DAO | deleteBudget("5") | dao.deleteBudget(5L) dipanggil | LULUS |
-| UT-52 | deleteBudget — id invalid tidak panggil DAO | deleteBudget("abc") | dao tidak dipanggil | LULUS |
-
-### 2.10 MainViewModelTest (9 test)
-
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| VM-01 | userName emit dari prefs | userName="Budi" | viewModel.userName.value = "Budi" | LULUS |
-| VM-02 | hasCompletedOnboarding = true | onboarding selesai | viewModel.hasCompletedOnboarding.value = true | LULUS |
-| VM-03 | addTransaction panggil repository | amount=50000, catId=1L | transactionRepo.insertTransaction dipanggil | LULUS |
-| VM-04 | addTransaction emit snackbar Success | valid input | snackbarEvent = Success("Transaksi tersimpan") | LULUS |
-| VM-05 | deleteTransaction panggil repository | id="42" | transactionRepo.deleteTransaction("42") dipanggil | LULUS |
-| VM-06 | deleteTransaction emit snackbar Success | id="42" | snackbarEvent = Success("Transaksi dihapus") | LULUS |
-| VM-07 | addBudget panggil repository | catId=1L, limit=500000L | budgetRepo.upsertBudget dipanggil | LULUS |
-| VM-08 | addBudget emit snackbar Success | valid input | snackbarEvent = Success("Budget tersimpan") | LULUS |
-| VM-09 | monthlyIncome = 0 tanpa transaksi | — | monthlyIncome.value = 0 | LULUS |
+| Kriteria | Hasil |
+|----------|-------|
+| Bottom navigation dapat diakses | LULUS |
+| Tab Home menampilkan saldo, tips, transaksi terbaru | LULUS |
+| Tab Riwayat menampilkan daftar transaksi dengan filter | LULUS |
+| Tab Laporan menampilkan chart dan filter periode | LULUS |
+| Tab Budget menampilkan daftar budget | LULUS |
+| FAB (+) membuka sheet tambah transaksi | LULUS |
+| Transisi antar tab tidak crash | LULUS |
+| Animasi slide transisi berjalan smooth | LULUS |
 
 ---
 
-## 3. Detail Integration Tests
+## 3. Pengujian
 
-### 3.1 TransactionDaoTest (4 test)
+### 3.1 Pengujian Fungsional Sistem
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| IT-01 | Insert lalu getAll | 1 transaksi (50000, "Makan") | result.size=1, amount=50000 | LULUS |
-| IT-02 | Delete hapus record | Insert → delete | result kosong | LULUS |
-| IT-03 | getAll urutkan dateMillis DESC | 2 transaksi (date 100, 200) | result[0].note="New", result[1].note="Old" | LULUS |
-| IT-04 | Insert beberapa transaksi | 3 transaksi | result.size=3 | LULUS |
+Pengujian fungsional dilakukan untuk memastikan setiap modul pada aplikasi Ngepet bekerja sesuai perancangannya. Pengujian meliputi:
 
-### 3.2 BudgetDaoTest (4 test)
+1. **Fungsi input manual** dalam menerima, memvalidasi, dan menyimpan data transaksi — nominal, kategori, catatan, tanggal, dan tipe (pemasukan/pengeluaran) dapat diisi dan disimpan dengan benar.
 
-| ID | Skenario | Input | Expected | Status |
-|----|----------|-------|----------|--------|
-| IT-05 | Insert dan query by bulan/tahun | budget(1, 500000, bulan=6, tahun=2026) | result.size=1, limit=500000 | LULUS |
-| IT-06 | Query kecualikan bulan berbeda | bulan=6 dan bulan=7, query bulan=6 | result.size=1, catId=1 | LULUS |
-| IT-07 | Delete budget | Insert → delete | result kosong | LULUS |
-| IT-08 | Insert beberapa budget same bulan | 3 budget bulan=6 | result.size=3 | LULUS |
+2. **Fungsi input suara** dalam menangkap, mentranskripsikan, dan mengkonversi ucapan menjadi transaksi — Android SpeechRecognizer API menangkap suara, SpeechToTransactionAdapter memparse teks mentah menjadi amount, kategori, dan tipe transaksi. Hasil preview ditampilkan sebelum konfirmasi simpan.
+
+3. **Fungsi filter pada layar Riwayat** berdasarkan sumber input (semua/suara/manual) dan kategori — filter chip berfungsi mempersempit hasil transaksi yang ditampilkan.
+
+4. **Fungsi penetapan dan pemantauan anggaran** per kategori pada layar Budget — budget dapat ditambahkan, diedit, dan dihapus. Progress bar dan status (Aman/Hampir habis/Melebihi limit) ditampilkan berdasarkan persentase penggunaan.
+
+5. **Fungsi penampilan laporan keuangan** dengan berbagai perspektif pada layar Laporan — donut chart pengeluaran/pemasukan, legenda per kategori dengan warna yang sesuai, line chart tren harian, dan filter periode (harian/mingguan/bulanan).
+
+Pengujian dilakukan berdasarkan skenario penggunaan nyata yang merepresentasikan aktivitas harian pengguna dalam mencatat keuangan.
+
+### 3.2 Pengujian Unit dan Integrasi
+
+Pengujian unit dilakukan untuk memverifikasi kebenaran logika bisnis pada level Domain dan Data secara terisolasi menggunakan MockK sebagai library mocking. Pengujian integrasi dilakukan untuk memastikan interaksi antara Repository dan Room Database berjalan dengan benar menggunakan in-memory database. Aspek yang diuji meliputi:
+
+1. **SpeechToTransactionAdapter** — Parsing angka bahasa Indonesia (word-based: "dua puluh ribu" → 20.000; formatted: "Rp30.000" → 30.000), deteksi tipe transaksi (INCOME/EXPENSE berdasarkan kata kunci), mapping kategori dari teks ke nama kategori, dan pembersihan catatan dari angka/kata henti.
+
+2. **ReportStrategy** — Kebenaran kalkulasi laporan bulanan (aggregasi total income/expense, persentase breakdown per kategori), mingguan (filter 7 hari terakhir), dan harian (filter hari ini).
+
+3. **TransactionComponentFactory** — Kebenaran pembuatan objek transaksi oleh ManualInputFactory (inputType=MANUAL, default category="Umum") dan VoiceInputFactory (inputType=VOICE, default category="Belum dikategorikan").
+
+4. **Repository Layer** — Konversi Entity↔Domain pada TransactionRepository, CategoryRepository, dan BudgetRepository. Verifikasi panggilan DAO dengan parameter yang benar, handling ID valid/invalid, dan urutan data.
+
+5. **ViewModel Layer** — Operasi CRUD (add/delete/update transaction dan budget), emisi snackbar event (Success/Error), dan inisialisasi state flow (userName, balance, income, expense).
+
+6. **Room Database (Integrasi)** — Insert/query/delete pada TransactionDao dan BudgetDao, urutan data berdasarkan dateMillis DESC, filter budget berdasarkan bulan dan tahun.
+
+7. **Reactive Flow** — Pengujian emisi data reaktif melalui Kotlin Flow yang diuji menggunakan library Turbine untuk memastikan setiap perubahan data ter-emitted dengan benar.
+
+### 3.3 Hasil Pengujian Unit Test
+
+| No | Kelas Pengujian | Jumlah Test | Lulus | Gagal |
+|----|-----------------|-------------|-------|-------|
+| 1 | SpeechToTransactionAdapterTest | 22 | 22 | 0 |
+| 2 | MonthlyReportStrategyTest | 5 | 5 | 0 |
+| 3 | WeeklyReportStrategyTest | 4 | 4 | 0 |
+| 4 | DailyReportStrategyTest | 4 | 4 | 0 |
+| 5 | ManualInputFactoryTest | 3 | 3 | 0 |
+| 6 | VoiceInputFactoryTest | 3 | 3 | 0 |
+| 7 | TransactionRepositoryImplTest | 5 | 5 | 0 |
+| 8 | CategoryRepositoryImplTest | 2 | 2 | 0 |
+| 9 | BudgetRepositoryImplTest | 4 | 4 | 0 |
+| 10 | MainViewModelTest | 9 | 9 | 0 |
+| 11 | ExampleUnitTest (Placeholder) | 1 | 1 | 0 |
+| | **Total Unit Test** | **62** | **62** | **0** |
+
+### 3.4 Hasil Pengujian Integrasi
+
+| No | Kelas Pengujian | Jumlah Test | Lulus | Gagal |
+|----|-----------------|-------------|-------|-------|
+| 1 | TransactionDaoTest | 4 | 4 | 0 |
+| 2 | BudgetDaoTest | 4 | 4 | 0 |
+| | **Total Integrasi** | **8** | **8** | **0** |
+
+### 3.5 Hasil Pengujian Sistem (End-to-End)
+
+| No | Kelas Pengujian | Skenario | Lulus | Gagal |
+|----|-----------------|----------|-------|-------|
+| 1 | SystemNavigationTest | SYS-06: Navigasi antar screen | LULUS | — |
+| 2 | SystemNavigationTest | SYS-06: Buka sheet tambah transaksi | LULUS | — |
+| 3 | SystemNavigationTest | SYS-04: Filter riwayat tampil | LULUS | — |
+| 4 | SystemNavigationTest | SYS-05: Ganti periode laporan | LULUS | — |
+| | **Total Sistem** | | **4** | **0** |
 
 ---
 
-## 4. Detail System Tests (End-to-End)
-
-### 4.1 SystemNavigationTest (4 test)
-
-| ID | Skenario | Langkah | Expected | Status |
-|----|----------|---------|----------|--------|
-| SYS-06 | Navigasi antar screen tanpa crash | Tap Home → Riwayat → Laporan → Budget → Home | Semua screen dapat diakses tanpa crash | LULUS |
-| SYS-06 | Buka sheet tambah transaksi | Tap FAB (+) → sheet terbuka | Sheet Manual/Suara terbuka, chip "Manual" dan "Suara" terlihat | LULUS |
-| SYS-04 | Filter riwayat tampil | Buka Riwayat → lihat filter | Chip filter (Sumber input, Kategori) terlihat | LULUS |
-| SYS-05 | Ganti periode laporan | Buka Laporan → tap Harian → Mingguan → Bulanan | Period chip berubah, tidak crash | LULUS |
-
----
-
-## 5. Dependensi Pengujian
+## 4. Dependensi Pengujian
 
 | Library | Versi | Fungsi |
 |---------|-------|--------|
@@ -200,6 +196,7 @@
 | Gradle | 9.4.1 |
 | Kotlin | 2.2.10 |
 | Android SDK | compileSdk 36, minSdk 34, targetSdk 36 |
+| Device | 23049PCD8G - Android 15 |
 
 ---
 
